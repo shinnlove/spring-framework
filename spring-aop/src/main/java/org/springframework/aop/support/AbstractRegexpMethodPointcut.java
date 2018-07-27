@@ -27,6 +27,8 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
+ * 抽象正则切点基础bean。
+ *
  * Abstract base regular expression pointcut bean. JavaBean properties are:
  * <ul>
  * <li>pattern: regular expression for the fully-qualified method names to match.
@@ -131,6 +133,7 @@ public abstract class AbstractRegexpMethodPointcut extends StaticMethodMatcherPo
 	 */
 	@Override
 	public boolean matches(Method method, @Nullable Class<?> targetClass) {
+		// `targetClass`是可空的——空的情况下直接校验方法是否匹配；不空的情况下获取类中的方法名
 		return ((targetClass != null && matchesPattern(ClassUtils.getQualifiedMethodName(method, targetClass))) ||
 				matchesPattern(ClassUtils.getQualifiedMethodName(method)));
 	}
@@ -142,8 +145,10 @@ public abstract class AbstractRegexpMethodPointcut extends StaticMethodMatcherPo
 	 */
 	protected boolean matchesPattern(String signatureString) {
 		for (int i = 0; i < this.patterns.length; i++) {
+			// 正则校验是否匹配
 			boolean matched = matches(signatureString, i);
 			if (matched) {
+				// 例外匹配的优先级高(如果命中任何一个例外则都不算匹配成功)
 				for (int j = 0; j < this.excludedPatterns.length; j++) {
 					boolean excluded = matchesExclusion(signatureString, j);
 					if (excluded) {
@@ -152,7 +157,9 @@ public abstract class AbstractRegexpMethodPointcut extends StaticMethodMatcherPo
 				}
 				return true;
 			}
+			// 没有匹配继续寻找
 		}
+		// 一个都没匹配到返回false
 		return false;
 	}
 

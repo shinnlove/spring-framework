@@ -248,6 +248,7 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						Assert.state(this.beanFactory != null, "No BeanFactory available");
 						LookupOverride override = new LookupOverride(method, lookup.value());
 						try {
+							// 从bean工厂中找出bean定义
 							RootBeanDefinition mbd = (RootBeanDefinition) this.beanFactory.getMergedBeanDefinition(beanName);
 							mbd.getMethodOverrides().addOverride(override);
 						}
@@ -271,8 +272,10 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 			synchronized (this.candidateConstructorsCache) {
 				candidateConstructors = this.candidateConstructorsCache.get(beanClass);
 				if (candidateConstructors == null) {
+					// 候选构造器
 					Constructor<?>[] rawCandidates;
 					try {
+						// 获取所有声明的构造器
 						rawCandidates = beanClass.getDeclaredConstructors();
 					}
 					catch (Throwable ex) {
@@ -292,11 +295,13 @@ public class AutowiredAnnotationBeanPostProcessor extends InstantiationAwareBean
 						else if (primaryConstructor != null) {
 							continue;
 						}
+						// 找到自动注入的
 						AnnotationAttributes ann = findAutowiredAnnotation(candidate);
 						if (ann == null) {
 							Class<?> userClass = ClassUtils.getUserClass(beanClass);
 							if (userClass != beanClass) {
 								try {
+									// 还是根据参数类型来找构造器
 									Constructor<?> superCtor =
 											userClass.getDeclaredConstructor(candidate.getParameterTypes());
 									ann = findAutowiredAnnotation(superCtor);

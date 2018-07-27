@@ -163,6 +163,8 @@ public abstract class AbstractMessageConverterMethodProcessor extends AbstractMe
 	}
 
 	/**
+	 * 向指定的输出流写出给定的handler处理得到的返回值信息。
+	 *
 	 * Writes the given return type to the given output message.
 	 * @param value the value to write to the output message
 	 * @param returnType the type of the value
@@ -193,11 +195,13 @@ public abstract class AbstractMessageConverterMethodProcessor extends AbstractMe
 		}
 
 		if (isResourceType(value, returnType)) {
+			// 设置响应头
 			outputMessage.getHeaders().set(HttpHeaders.ACCEPT_RANGES, "bytes");
 			if (value != null && inputMessage.getHeaders().getFirst(HttpHeaders.RANGE) != null) {
 				Resource resource = (Resource) value;
 				try {
 					List<HttpRange> httpRanges = inputMessage.getHeaders().getRange();
+					// 设置HTTP的状态
 					outputMessage.getServletResponse().setStatus(HttpStatus.PARTIAL_CONTENT.value());
 					body = HttpRange.toResourceRegions(httpRanges, resource);
 					valueType = body.getClass();
