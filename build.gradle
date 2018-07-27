@@ -1,22 +1,32 @@
 buildscript {
+	// 定义仓库
 	repositories {
 		maven { url "https://repo.spring.io/plugins-release" }
 	}
 	dependencies {
-		classpath("io.spring.gradle:propdeps-plugin:0.0.9.RELEASE")
+		classpath("io.spring.gradle:propdeps-plugin:0.0.8")
+		classpath("io.spring.gradle:docbook-reference-plugin:0.3.1")
 		classpath("org.asciidoctor:asciidoctorj-pdf:1.5.0-alpha.16")
+		classpath("org.asciidoctor:asciidoctorj-epub3:1.5.0-alpha.7")
 	}
 }
 
 // 3rd party plugin repositories can be configured in settings.gradle
 plugins {
-	id "io.spring.dependency-management" version "1.0.5.RELEASE" apply false
-	id "org.jetbrains.kotlin.jvm" version "1.2.50" apply false
+	id "com.gradle.build-scan" version "1.8"
+	id "io.spring.dependency-management" version "1.0.3.RELEASE" apply false
+	id "org.jetbrains.kotlin.jvm" version "1.2.41" apply false
 	id "org.jetbrains.dokka" version "0.9.17"
-	id "org.asciidoctor.convert" version "1.5.7"
+	id "org.asciidoctor.convert" version "1.5.6"
+}
+
+buildScan {
+	licenseAgreementUrl = 'https://gradle.com/terms-of-service'
+	licenseAgree = 'yes'
 }
 
 ext {
+	// 定义一个闭包，输出这些属性
 	linkHomepage = 'https://projects.spring.io/spring-framework'
 	linkCi = 'https://build.spring.io/browse/SPR'
 	linkIssue = 'https://jira.spring.io/browse/SPR'
@@ -24,62 +34,47 @@ ext {
 	linkScmConnection = 'scm:git:git://github.com/spring-projects/spring-framework.git'
 	linkScmDevConnection = 'scm:git:ssh://git@github.com:spring-projects/spring-framework.git'
 
+	// 子模块定义：`subprojects`查找所有不是`spring-build-src`或`spring-framework-bom`的模块
 	moduleProjects = subprojects.findAll {
 		!it.name.equals('spring-build-src') && !it.name.equals('spring-framework-bom')
 	}
-
-	aspectjVersion       = "1.9.1"
-	freemarkerVersion    = "2.3.28"
-	groovyVersion        = "2.5.0"
-	hsqldbVersion        = "2.4.1"
-	jackson2Version      = "2.9.6"
-	jettyVersion         = "9.4.11.v20180605"
-	junitPlatformVersion = "1.2.0"
-	junitJupiterVersion  = "5.2.0"
-	junitVintageVersion  = "5.2.0"
-	kotlinVersion        = "1.2.50"
-	log4jVersion         = "2.11.0"
-	nettyVersion         = "4.1.25.Final"
-	reactorVersion       = "Californium-BUILD-SNAPSHOT"
-	rxjavaVersion        = "1.3.8"
-	rxjavaAdapterVersion = "1.2.1"
-	rxjava2Version       = "2.1.16"
-	slf4jVersion         = "1.7.25"	  // spring-jcl + consistent 3rd party deps
-	tiles3Version        = "3.0.8"
-	tomcatVersion        = "9.0.10"
-	undertowVersion      = "2.0.9.Final"
-
-	gradleScriptDir = "${rootProject.projectDir}/gradle"
-	withoutJclOverSlf4J = {
-		exclude group: "org.slf4j", module: "jcl-over-slf4j"
-	}
 }
 
+// 配置所有项目`allprojects`
 configure(allprojects) { project ->
 	group = "org.springframework"
 	version = qualifyVersionIfNecessary(version)
 
+	ext.aspectjVersion       = "1.9.1"
+	ext.freemarkerVersion    = "2.3.28"
+	ext.groovyVersion        = "2.5.0"
+	ext.hsqldbVersion        = "2.4.0"
+	ext.jackson2Version      = "2.9.5"
+	ext.jettyVersion         = "9.4.10.v20180503"
+	ext.junitPlatformVersion = "1.2.0"
+	ext.junitJupiterVersion  = "5.2.0"
+	ext.junitVintageVersion  = "5.2.0"
+	ext.kotlinVersion        = "1.2.41"
+	ext.log4jVersion         = "2.11.0"
+	ext.nettyVersion         = "4.1.25.Final"
+	ext.reactorVersion       = "Californium-BUILD-SNAPSHOT"
+	ext.rxjavaVersion        = "1.3.8"
+	ext.rxjavaAdapterVersion = "1.2.1"
+	ext.rxjava2Version       = "2.1.14"
+	ext.slf4jVersion         = "1.7.25"	  // spring-jcl + consistent 3rd party deps
+	ext.tiles3Version        = "3.0.8"
+	ext.tomcatVersion        = "9.0.8"
+	ext.undertowVersion      = "2.0.9.Final"
+
+	// 项目根目录下有gradle文件夹，存放着各种脚本
+	ext.gradleScriptDir = "${rootProject.projectDir}/gradle"
+
 	apply plugin: "propdeps"
+	// 向项目添加Java编译，测试和绑定的功能。它作为许多其他Gradle插件的基础。
 	apply plugin: "java"
 	apply plugin: "test-source-set-dependencies"
-	apply plugin: "io.spring.dependency-management"
+	// 本地加载脚本插件，从gradle脚本目录下加载ide.gradle插件
 	apply from: "${gradleScriptDir}/ide.gradle"
-	apply plugin: "checkstyle"
-
-	dependencyManagement {
-		resolutionStrategy {
-			cacheChangingModulesFor 0, 'seconds'
-		}
-		applyMavenExclusions = false
-		generatedPomCustomization {
-			enabled = false
-		}
-	}
-
-	checkstyle {
-		toolVersion = "8.10.1"
-		configDir = rootProject.file("src/checkstyle")
-	}
 
 	apply plugin: "kotlin"
 	compileKotlin {
@@ -108,6 +103,7 @@ configure(allprojects) { project ->
 			}
 		}
 
+		exclude group: "org.slf4j", module: "jcl-over-slf4j"
 	}
 
 	def commonCompilerArgs =
@@ -123,6 +119,7 @@ configure(allprojects) { project ->
 			["-Xlint:-varargs", "-Xlint:-fallthrough","-Xlint:-rawtypes",
 			 "-Xlint:-deprecation", "-Xlint:-unchecked"]
 
+	// 编译属性，类似maven的源、目标和编码
 	compileJava {
 		sourceCompatibility = 1.8  // can be switched to 10 for testing
 		targetCompatibility = 1.8
@@ -157,10 +154,10 @@ configure(allprojects) { project ->
 		testCompile("junit:junit:4.12") {
 			exclude group:'org.hamcrest', module:'hamcrest-core'
 		}
-		testCompile("org.mockito:mockito-core:2.19.0") {
+		testCompile("org.mockito:mockito-core:2.18.0") {
 			exclude group:'org.hamcrest', module:'hamcrest-core'
 		}
-		testCompile("com.nhaarman:mockito-kotlin:1.6.0") {
+		testCompile("com.nhaarman:mockito-kotlin:1.5.0") {
 			exclude module:'kotlin-stdlib'
 			exclude module:'kotlin-reflect'
 			exclude module:'mockito-core'
@@ -172,32 +169,36 @@ configure(allprojects) { project ->
 		// JSR-305 only used for non-required meta-annotations
 		compileOnly("com.google.code.findbugs:jsr305:3.0.2")
 		testCompileOnly("com.google.code.findbugs:jsr305:3.0.2")
-		checkstyle("io.spring.javaformat:spring-javaformat-checkstyle:0.0.5")
 	}
 
 	ext.javadocLinks = [
-		"http://docs.oracle.com/javase/8/docs/api/",
-		"http://docs.oracle.com/javaee/7/api/",
-		"http://docs.oracle.com/cd/E13222_01/wls/docs90/javadocs/",  // CommonJ
-		"http://pic.dhe.ibm.com/infocenter/wasinfo/v7r0/topic/com.ibm.websphere.javadoc.doc/web/apidocs/",
-		"http://glassfish.java.net/nonav/docs/v3/api/",
-		"http://docs.jboss.org/jbossas/javadoc/4.0.5/connector/",
-		"http://docs.jboss.org/jbossas/javadoc/7.1.2.Final/",
-		"http://tiles.apache.org/tiles-request/apidocs/",
-		"http://tiles.apache.org/framework/apidocs/",
-		"http://www.eclipse.org/aspectj/doc/released/aspectj5rt-api/",
-		"http://ehcache.org/apidocs/2.10.4",
-		"http://quartz-scheduler.org/api/2.2.1/",
-		"http://fasterxml.github.io/jackson-core/javadoc/2.8/",
-		"http://fasterxml.github.io/jackson-databind/javadoc/2.8/",
-		"http://fasterxml.github.io/jackson-dataformat-xml/javadoc/2.8/",
-		"http://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/"
+			"http://docs.oracle.com/javase/8/docs/api/",
+			"http://docs.oracle.com/javaee/7/api/",
+			"http://docs.oracle.com/cd/E13222_01/wls/docs90/javadocs/",  // CommonJ
+			"http://pic.dhe.ibm.com/infocenter/wasinfo/v7r0/topic/com.ibm.websphere.javadoc.doc/web/apidocs/",
+			"http://glassfish.java.net/nonav/docs/v3/api/",
+			"http://docs.jboss.org/jbossas/javadoc/4.0.5/connector/",
+			"http://docs.jboss.org/jbossas/javadoc/7.1.2.Final/",
+			"http://tiles.apache.org/tiles-request/apidocs/",
+			"http://tiles.apache.org/framework/apidocs/",
+			"http://www.eclipse.org/aspectj/doc/released/aspectj5rt-api/",
+			"http://ehcache.org/apidocs/2.10.4",
+			"http://quartz-scheduler.org/api/2.2.1/",
+			"http://fasterxml.github.io/jackson-core/javadoc/2.8/",
+			"http://fasterxml.github.io/jackson-databind/javadoc/2.8/",
+			"http://fasterxml.github.io/jackson-dataformat-xml/javadoc/2.8/",
+			"http://hc.apache.org/httpcomponents-client-ga/httpclient/apidocs/"
 	] as String[]
 }
 
+// 配置所有子模块`subprojects`
 configure(subprojects - project(":spring-build-src")) { subproject ->
+
+	// 应用插件maven发布
 	apply from: "${gradleScriptDir}/publish-maven.gradle"
 
+	// 打包类型，如果是一个可执行的java程序，manifest必须指定`attributes 'Main-Class': 'xxx'`
+	// 定义每个子项目打包成一个jar以及`MANIFEST.MF`中的属性
 	jar {
 		manifest.attributes["Implementation-Title"] = subproject.name
 		manifest.attributes["Implementation-Version"] = subproject.version
@@ -229,6 +230,7 @@ configure(subprojects - project(":spring-build-src")) { subproject ->
 		logging.captureStandardOutput LogLevel.INFO  // suppress "## warnings" message
 	}
 
+	// 定义源码jar的任务
 	task sourcesJar(type: Jar, dependsOn: classes) {
 		duplicatesStrategy = DuplicatesStrategy.EXCLUDE
 		classifier = 'sources'
@@ -236,6 +238,7 @@ configure(subprojects - project(":spring-build-src")) { subproject ->
 		// Don't include or exclude anything explicitly by default. See SPR-12085.
 	}
 
+	// 定义jar文档任务
 	task javadocJar(type: Jar) {
 		classifier = "javadoc"
 		from javadoc
@@ -247,10 +250,13 @@ configure(subprojects - project(":spring-build-src")) { subproject ->
 	}
 }
 
+// 配置根目录项目`rootProject`
 configure(rootProject) {
 	description = "Spring Framework"
 
+	// 加载groovy插件、依赖管理插件、文件diff插件、文档doc插件
 	apply plugin: "groovy"
+	apply plugin: "io.spring.dependency-management"
 	apply from: "${gradleScriptDir}/jdiff.gradle"
 	apply from: "${gradleScriptDir}/docs.gradle"
 
@@ -258,6 +264,13 @@ configure(rootProject) {
 		imports {
 			mavenBom "io.projectreactor:reactor-bom:${reactorVersion}"
 		}
+		dependencies {
+			dependency "io.projectreactor.netty:reactor-netty:0.8.0.BUILD-SNAPSHOT"
+		}
+		resolutionStrategy {
+			cacheChangingModulesFor 0, 'seconds'
+		}
+		applyMavenExclusions = false
 	}
 
 	// don't publish the default jar for the root project
@@ -290,7 +303,7 @@ configure(rootProject) {
 
 	wrapper {
 		description = "Generates gradlew[.bat] scripts"
-		gradleVersion = '4.8.1'
+		gradleVersion = '4.8'
 
 		doLast() {
 			def gradleOpts = "-XX:MaxMetaspaceSize=1024m -Xmx1024m"

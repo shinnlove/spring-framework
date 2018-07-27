@@ -1,3 +1,6 @@
+// 在根目录下的`settings.gradle`文件是`gradle`多模块构建的基础
+
+// 使用`include`指令指明`Gradle`多模块具有哪些模块
 include "spring-aop"
 include "spring-aspects"
 include "spring-beans"
@@ -25,6 +28,7 @@ include "spring-framework-bom"
 include "buildSrc"
 rootProject.children.find{ it.name == "buildSrc" }.name = "spring-build-src"
 
+// 根项目名称叫`spring`，每一个子模块下的`gradle`文件名称是：`模块名`+.gradle
 rootProject.name = 'spring'
 rootProject.children.each {project ->
 	project.buildFileName = "${project.name}.gradle"
