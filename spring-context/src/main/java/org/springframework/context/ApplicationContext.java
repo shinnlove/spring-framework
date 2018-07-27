@@ -24,6 +24,16 @@ import org.springframework.core.io.support.ResourcePatternResolver;
 import org.springframework.lang.Nullable;
 
 /**
+ * 给应用提供可配置化的核心接口。
+ *
+ * 一个应用上下文提供了如下功能：
+ * 1、可以访问应用组件的bean factory方法；
+ * 2、加载文件资源的通用能力；
+ * 3、向注册的监听器发布事件的能力；
+ * 4、国际化解析消息的能力；
+ * 5、继承自父context，但是后代容器的优先级更高。使得多个Servlet可以共享父容器，同时也可以拥有子容器(重要)。
+ *
+ *
  * Central interface to provide configuration for an application.
  * This is read-only while the application is running, but may be
  * reloaded if the implementation supports this.
