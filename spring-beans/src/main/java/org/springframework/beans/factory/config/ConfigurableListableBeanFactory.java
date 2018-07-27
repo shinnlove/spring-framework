@@ -24,6 +24,10 @@ import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.lang.Nullable;
 
 /**
+ * 可配置、可枚举、可自动装配的`BeanFactory`接口。
+ *
+ * 作为对`ConfigurableBeanFactory`的补充，它提供了分析修改bean定义的工具；也可以预先实例化单例的bean。
+ *
  * Configuration interface to be implemented by most listable bean factories.
  * In addition to {@link ConfigurableBeanFactory}, it provides facilities to
  * analyze and modify bean definitions, and to pre-instantiate singletons.

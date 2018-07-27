@@ -21,6 +21,9 @@ import java.lang.reflect.Method;
 import org.springframework.aop.MethodBeforeAdvice;
 
 /**
+ * 简单的、可用来计数检查前置通知。
+ * 在{@link MethodCounter}维护了一个HashMap来统计方法访问次数。
+ *
  * Simple before advice example that we can use for counting checks.
  *
  * @author Rod Johnson
@@ -30,6 +33,7 @@ public class CountingBeforeAdvice extends MethodCounter implements MethodBeforeA
 
 	@Override
 	public void before(Method m, Object[] args, Object target) throws Throwable {
+		// 统计方法名和调用次数
 		count(m);
 	}
 

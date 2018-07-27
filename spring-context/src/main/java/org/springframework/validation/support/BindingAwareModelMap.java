@@ -22,6 +22,8 @@ import org.springframework.ui.ExtendedModelMap;
 import org.springframework.validation.BindingResult;
 
 /**
+ * 自动移除数据对象
+ *
  * Subclass of {@link org.springframework.ui.ExtendedModelMap} that automatically removes
  * a {@link org.springframework.validation.BindingResult} object if the corresponding
  * target attribute gets replaced through regular {@link Map} operations.

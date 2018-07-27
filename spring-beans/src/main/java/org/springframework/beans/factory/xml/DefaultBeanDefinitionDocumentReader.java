@@ -40,6 +40,8 @@ import org.springframework.util.ResourceUtils;
 import org.springframework.util.StringUtils;
 
 /**
+ * 从XML文档中解析bean定义的默认文档读取器实现。
+ *
  * Default implementation of the {@link BeanDefinitionDocumentReader} interface that
  * reads bean definitions according to the "spring-beans" DTD and XSD format
  * (Spring's default XML bean definition format).
@@ -80,6 +82,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	@Nullable
 	private XmlReaderContext readerContext;
 
+	/** bean定义解析器委托，用来解析spring的bean标签 */
 	@Nullable
 	private BeanDefinitionParserDelegate delegate;
 
@@ -175,9 +178,11 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 				if (node instanceof Element) {
 					Element ele = (Element) node;
 					if (delegate.isDefaultNamespace(ele)) {
+						// springframework解析基础元素的方法
 						parseDefaultElement(ele, delegate);
 					}
 					else {
+						// 解析自定义元素
 						delegate.parseCustomElement(ele);
 					}
 				}
@@ -190,15 +195,20 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 
 	private void parseDefaultElement(Element ele, BeanDefinitionParserDelegate delegate) {
 		if (delegate.nodeNameEquals(ele, IMPORT_ELEMENT)) {
+			// 解析import方式注入的bean(一般用来引入并实例化jar包中的类)
+			// <import resource="classpath:xxxx.xml"/>
 			importBeanDefinitionResource(ele);
 		}
 		else if (delegate.nodeNameEquals(ele, ALIAS_ELEMENT)) {
+			// 解析alias别名
 			processAliasRegistration(ele);
 		}
 		else if (delegate.nodeNameEquals(ele, BEAN_ELEMENT)) {
+			// 单个bean元素
 			processBeanDefinition(ele, delegate);
 		}
 		else if (delegate.nodeNameEquals(ele, NESTED_BEANS_ELEMENT)) {
+			// 扫到<beans xmlns:的schema则进行递归
 			// recurse
 			doRegisterBeanDefinitions(ele);
 		}
@@ -207,9 +217,12 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	/**
 	 * Parse an "import" element and load the bean definitions
 	 * from the given resource into the bean factory.
+	 *
+	 * 解析<import resource="classpath:aaa/bbb/xxx.xml"/>这种资源文件包含的bean，并且合并到当前的bean工厂中。
 	 */
 	protected void importBeanDefinitionResource(Element ele) {
 		String location = ele.getAttribute(RESOURCE_ATTRIBUTE);
+		// resource必须指定classpath:路径下的xxxx.xml文件才行
 		if (!StringUtils.hasText(location)) {
 			getReaderContext().error("Resource location must not be empty", ele);
 			return;
@@ -218,8 +231,11 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		// Resolve system properties: e.g. "${user.dir}"
 		location = getReaderContext().getEnvironment().resolveRequiredPlaceholders(location);
 
+		// 需要import的xml资源文件合集
 		Set<Resource> actualResources = new LinkedHashSet<>(4);
 
+		// 绝对路径还是相对的URI(默认相对路径)
+		// 绝对路径包含：classpath*:、classpath:、URL地址
 		// Discover whether the location is an absolute or relative URI
 		boolean absoluteLocation = false;
 		try {
@@ -233,6 +249,8 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 		// Absolute or relative?
 		if (absoluteLocation) {
 			try {
+				// 如果是绝对路径，则使用reader再次加载资源xml(等于回到了XmlBeanDefinitionReader第一次载入resource解析的地方!!!)
+				// 返回导入resource的数量importCount，并且将资源文件放在集合Set<Resource> actualResources中
 				int importCount = getReaderContext().getReader().loadBeanDefinitions(location, actualResources);
 				if (logger.isDebugEnabled()) {
 					logger.debug("Imported " + importCount + " bean definitions from URL location [" + location + "]");
@@ -269,6 +287,7 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 						ele, ex);
 			}
 		}
+		// 集合转数组，并且向监听器发射事件，加入到CollectingReaderEventListener的import集合中
 		Resource[] actResArray = actualResources.toArray(new Resource[0]);
 		getReaderContext().fireImportProcessed(location, actResArray, extractSource(ele));
 	}
@@ -301,15 +320,23 @@ public class DefaultBeanDefinitionDocumentReader implements BeanDefinitionDocume
 	}
 
 	/**
+	 * 处理给出的bean元素，解析bean定义并且使用注册器注册。
+	 *
 	 * Process the given bean element, parsing the bean definition
 	 * and registering it with the registry.
 	 */
 	protected void processBeanDefinition(Element ele, BeanDefinitionParserDelegate delegate) {
+		// 将元素解析为`BeanDefinitionHolder`类型
 		BeanDefinitionHolder bdHolder = delegate.parseBeanDefinitionElement(ele);
 		if (bdHolder != null) {
+			// 修饰下bean的schema等内容(待补充)
 			bdHolder = delegate.decorateBeanDefinitionIfRequired(ele, bdHolder);
 			try {
 				// Register the final decorated instance.
+				// 从reader上下文中获取注册器，去注册bean定义，一般register动作来自->DefaultListableBeanFactory
+				// 1.1 XmlReaderContext中依赖了XmlBeanDefinitionReader，
+				// 1.2 XmlBeanDefinitionReader的父类AbstractBeanDefinitionReader中持有BeanDefinitionRegistry
+				// 1.3 BeanDefinitionRegistry的默认实现是DefaultListableBeanFactory
 				BeanDefinitionReaderUtils.registerBeanDefinition(bdHolder, getReaderContext().getRegistry());
 			}
 			catch (BeanDefinitionStoreException ex) {

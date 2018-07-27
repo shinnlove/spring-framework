@@ -48,6 +48,8 @@ import org.springframework.util.ReflectionUtils;
 public abstract class BridgeMethodResolver {
 
 	/**
+	 * 找到编译器为原生泛型方法生成的桥接方法。
+	 *
 	 * Find the original method for the supplied {@link Method bridge Method}.
 	 * <p>It is safe to call this method passing in a non-bridge {@link Method} instance.
 	 * In such a case, the supplied {@link Method} instance is returned directly to the caller.
@@ -57,6 +59,7 @@ public abstract class BridgeMethodResolver {
 	 * if no more specific one could be found)
 	 */
 	public static Method findBridgedMethod(Method bridgeMethod) {
+		// 不是桥接方法直接返回方法本身
 		if (!bridgeMethod.isBridge()) {
 			return bridgeMethod;
 		}
@@ -64,6 +67,7 @@ public abstract class BridgeMethodResolver {
 		// Gather all methods with matching name and parameter size.
 		List<Method> candidateMethods = new ArrayList<>();
 		Method[] methods = ReflectionUtils.getAllDeclaredMethods(bridgeMethod.getDeclaringClass());
+		// 检索这个类中每一个方法，如果名称、方法和equals都相等就加入候选列表
 		for (Method candidateMethod : methods) {
 			if (isBridgedCandidateFor(candidateMethod, bridgeMethod)) {
 				candidateMethods.add(candidateMethod);
@@ -82,6 +86,7 @@ public abstract class BridgeMethodResolver {
 			return bridgedMethod;
 		}
 		else {
+			// 桥接方法走丢了，用原始方法代替吧...
 			// A bridge method was passed in but we couldn't find the bridged method.
 			// Let's proceed with the passed-in method and hope for the best...
 			return bridgeMethod;
@@ -95,6 +100,7 @@ public abstract class BridgeMethodResolver {
 	 * checks and can be used quickly filter for a set of possible matches.
 	 */
 	private static boolean isBridgedCandidateFor(Method candidateMethod, Method bridgeMethod) {
+		// 原始方法和桥接方法的equals是相等的、名称、参数都是相等的
 		return (!candidateMethod.isBridge() && !candidateMethod.equals(bridgeMethod) &&
 				candidateMethod.getName().equals(bridgeMethod.getName()) &&
 				candidateMethod.getParameterCount() == bridgeMethod.getParameterCount());
