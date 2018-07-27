@@ -34,6 +34,9 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
+ * 抽象的bean定义读取器。
+ * 持有`BeanDefinitionRegistry`可以向beanFactory注册，同时持有`ResourceLoader`、`ClassLoader`、`Environment`和`BeanNameGenerator`。
+ *
  * Abstract base class for bean definition readers which implement
  * the {@link BeanDefinitionReader} interface.
  *
@@ -50,6 +53,7 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 	/** Logger available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	/** 向beanFactory注册bean定义的注册钩子。 */
 	private final BeanDefinitionRegistry registry;
 
 	@Nullable
@@ -184,6 +188,9 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 		Assert.notNull(resources, "Resource array must not be null");
 		int counter = 0;
 		for (Resource resource : resources) {
+			// 这里loadBeanDefinitions一般走XmlBeanDefinitionReader中的
+			// 接doLoadBeanDefinitions方法调用register的注册beanDefinitions
+			// 再然后接DefaultBeanDefinitionDocumentReader的doRegisterBeanDefinitions注册方法开始解析xml文件了
 			counter += loadBeanDefinitions(resource);
 		}
 		return counter;
@@ -191,6 +198,7 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 
 	@Override
 	public int loadBeanDefinitions(String location) throws BeanDefinitionStoreException {
+		// 第一次调用的时候实际资源为null，解析过程中遇到<import resource类型，则再加入到actualResources集合中
 		return loadBeanDefinitions(location, null);
 	}
 
@@ -218,11 +226,14 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 
 		if (resourceLoader instanceof ResourcePatternResolver) {
 			// Resource pattern matching available.
+			// ClassPathXmlApplicationContext是接口ResourcePatternResolver的实现类，因此资源类解析策略进入这个分支
 			try {
+				// classpath*:aaa/bbb/x.xml这样的配置可能有多个资源，用PathMatchingResourcePatternResolver来获取资源
 				Resource[] resources = ((ResourcePatternResolver) resourceLoader).getResources(location);
 				int loadCount = loadBeanDefinitions(resources);
 				if (actualResources != null) {
 					for (Resource resource : resources) {
+						// 将每个资源文件加入到实际资源集合中
 						actualResources.add(resource);
 					}
 				}
@@ -238,7 +249,9 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 		}
 		else {
 			// Can only load single resources by absolute URL.
+			// 绝对路径只能每次加载一个resource资源
 			Resource resource = resourceLoader.getResource(location);
+			// 加载单个resource，这里是XmlBeanDefinitionReader
 			int loadCount = loadBeanDefinitions(resource);
 			if (actualResources != null) {
 				actualResources.add(resource);
@@ -250,6 +263,14 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 		}
 	}
 
+	/**
+	 * 当bean的定义locations以多个string类型变量给出时调用的解析方法。
+	 *
+	 * @param locations the resource locations, to be loaded with the ResourceLoader
+	 * (or ResourcePatternResolver) of this bean definition reader
+	 * @return
+	 * @throws BeanDefinitionStoreException
+	 */
 	@Override
 	public int loadBeanDefinitions(String... locations) throws BeanDefinitionStoreException {
 		Assert.notNull(locations, "Location array must not be null");

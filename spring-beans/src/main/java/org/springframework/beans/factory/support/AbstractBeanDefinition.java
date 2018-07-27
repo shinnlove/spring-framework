@@ -151,6 +151,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 
 	private int dependencyCheck = DEPENDENCY_CHECK_NONE;
 
+	/** 非常重要的可空属性：spring的bean的依赖bean，在XmlBeanDefinitionReader扫描的时候设置。 */
 	@Nullable
 	private String[] dependsOn;
 
@@ -220,6 +221,8 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	}
 
 	/**
+	 * 对给出的bean进行一份深拷贝。
+	 *
 	 * Create a new AbstractBeanDefinition as a deep copy of the given
 	 * bean definition.
 	 * @param original the original bean definition to copy from
@@ -1047,6 +1050,7 @@ public abstract class AbstractBeanDefinition extends BeanMetadataAttributeAccess
 	 * @throws BeanDefinitionValidationException in case of validation failure
 	 */
 	public void validate() throws BeanDefinitionValidationException {
+		// 工厂方法和被覆盖方法不可以同时存在
 		if (hasMethodOverrides() && getFactoryMethodName() != null) {
 			throw new BeanDefinitionValidationException(
 					"Cannot combine static factory method with method overrides: " +

@@ -77,6 +77,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.util.StringValueResolver;
 
 /**
+ * 本类是`BeanFactory`的一个抽象基类实现，提供了`ConfigurableBeanFactory`全量的SPI工具。
+ *
  * Abstract base class for {@link org.springframework.beans.factory.BeanFactory}
  * implementations, providing the full capabilities of the
  * {@link org.springframework.beans.factory.config.ConfigurableBeanFactory} SPI.
@@ -169,7 +171,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/** Names of beans that have already been created at least once. */
 	private final Set<String> alreadyCreated = Collections.newSetFromMap(new ConcurrentHashMap<>(256));
 
-	/** Names of beans that are currently in creation. */
+	/** Names of beans that are currently in creation, 在当前线程中正在创建的beanId，threadLocal数据结构 */
 	private final ThreadLocal<Object> prototypesCurrentlyInCreation =
 			new NamedThreadLocal<>("Prototype beans currently in creation");
 
@@ -192,18 +194,31 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 	//---------------------------------------------------------------------
 	// Implementation of BeanFactory interface
+	// 实现`BeanFactory`bean工厂的接口，本类也是`DefaultListableBeanFactory`的基类。
+	// 这是从Bean工厂中获取一个bean的接口。
+	// 特别注意：依赖注入的过程是用户第一次向IoC容器索要bean时触发的!!(例外是当设置了`lazy-init`属性来完成bean的预实例化)。
+	// `doGetBean`方法是`beanFactory`中的bean发生依赖注入的入口。
 	//---------------------------------------------------------------------
 
+	/**
+	 * 按照bean的id来寻找bean。
+	 */
 	@Override
 	public Object getBean(String name) throws BeansException {
 		return doGetBean(name, null, null, false);
 	}
 
+	/**
+	 * 按照bean的id和类型(接口类型)来寻找bean。
+	 */
 	@Override
 	public <T> T getBean(String name, @Nullable Class<T> requiredType) throws BeansException {
 		return doGetBean(name, requiredType, null, false);
 	}
 
+	/**
+	 * 按照bean的id和创建参数来寻找bean。
+	 */
 	@Override
 	public Object getBean(String name, Object... args) throws BeansException {
 		return doGetBean(name, null, args, false);
@@ -225,6 +240,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	}
 
 	/**
+	 * 返回一个bean实例。
+	 *
 	 * Return an instance, which may be shared or independent, of the specified bean.
 	 * @param name the name of the bean to retrieve
 	 * @param requiredType the required type of the bean to retrieve
@@ -243,6 +260,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		Object bean;
 
 		// Eagerly check singleton cache for manually registered singletons.
+		// 手工注册单例提前检查缓存
 		Object sharedInstance = getSingleton(beanName);
 		if (sharedInstance != null && args == null) {
 			if (logger.isDebugEnabled()) {
@@ -260,47 +278,86 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 		else {
 			// Fail if we're already creating this bean instance:
 			// We're assumably within a circular reference.
+			// 如果这个bean正在当前线程中创建，我们可以认为这里有循环引用，直接报错即可
 			if (isPrototypeCurrentlyInCreation(beanName)) {
 				throw new BeanCurrentlyInCreationException(beanName);
 			}
 
 			// Check if bean definition exists in this factory.
+			// 检查下bean是否在当前的bean工厂中(`containsBeanDefinition`方法依据那份`beanDefinitionMap`检查)，如果映射中不存在，就检查父级容器
+			// `AbstractBeanFactory`是可以持有`BeanFactory`类型的父级bean工厂容器的
 			BeanFactory parentBeanFactory = getParentBeanFactory();
+
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
 				String nameToLookup = originalBeanName(name);
 				if (parentBeanFactory instanceof AbstractBeanFactory) {
+					// 如果父级容器也是`AbstractBeanFactory`类型，则递归调用`doGetBean()`方法获取
+					// 备注：这个在OSGI中有`Spring-Parent`的时候，会循环去取目标bean
 					return ((AbstractBeanFactory) parentBeanFactory).doGetBean(
 							nameToLookup, requiredType, args, typeCheckOnly);
 				}
 				else if (args != null) {
 					// Delegation to parent with explicit args.
+					// 指定参数从父容器中提取
 					return (T) parentBeanFactory.getBean(nameToLookup, args);
 				}
 				else {
 					// No args -> delegate to standard getBean method.
+					// 没有参数就用标准的`getBean`来获取
 					return parentBeanFactory.getBean(nameToLookup, requiredType);
 				}
 			}
 
+			// 不需要类型检查就标记bean已经创建了
 			if (!typeCheckOnly) {
 				markBeanAsCreated(beanName);
 			}
 
 			try {
+				// Step1：先合并parent的bean定义
+
+				// 如果给定的bean有父bean，则合并父级bean和子级bean的定义
 				final RootBeanDefinition mbd = getMergedLocalBeanDefinition(beanName);
+				// 如果合并后的bean定义还是抽象的(子bean没有实现父bean的方法)则报错
 				checkMergedBeanDefinition(mbd, beanName, args);
 
 				// Guarantee initialization of beans that the current bean depends on.
+				// Step2：再检测bean依赖
+
+				/**
+				 * ==============Spring确保bean的依赖不会循环Begin============
+				 * Spring的每个Bean的BeanDefinition在被`XmlBeanDefinitionReader`扫描的时候，
+				 * 如果有依赖都会存放在`String[] dependsOn`中，依赖可以空。
+				 * 在做`doGetBean`的时候，spring会为目标bean进行依赖初始化(依赖注入)。
+				 *
+				 * Spring做了两个最重要的机制：
+				 * 1、维持一份正向索引：目标bean=>被依赖bean集合；
+				 * 2、每次都先检查当前目标bean和被依赖的bean是否有依赖关系，再去建立这种依赖关系（这样做最大的好处是如果已有依赖、说明存在循环依赖）；
+				 * 3、当A=>B、B=>C、C=>D、而D=>A时候：
+				 * A会触发对B的递归获取(被依赖的bean先实例化)、B触发对C、C触发对D、D触发对A、最后A又触发对B......
+				 * 结果发现A对B的依赖关系已经存在，如果没有循环依赖，这份关系应该不存在!从而的得知循环依赖。
+				 *
+				 * 所需数据结构：目标bean => Set<>(被依赖的beanId);
+				 * 检索依赖的时候，会不断追溯已经存在的子级依赖关系，如果子级依赖关系中也有映射到被依赖的bean，则代表还是循环依赖了。
+				 */
+
+				// 非常重要：确保当前要初始化的bean所需的依赖bean都已经被初始化!!!
+				// 在bean的定义dependsOn数组中存放了所有依赖bean的Id
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
+					// 循环遍历每个依赖
 					for (String dep : dependsOn) {
+						// 非常重要：每一个依赖关系对于当前bean应该都是不在Map映射中的，有就说明有循环依赖，需要报错!!!
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
 						}
+						// 非常重要：Step1-为当前bean注册依赖的bean(写入Map数据结构)
+						// 将本来不存在的依赖关系注册好，也为下一个依赖检测循环做准备
 						registerDependentBean(dep, beanName);
 						try {
+							// 非常重要：Step2-递归获取依赖的bean(触发被依赖的bean进行依赖注入!!!)
 							getBean(dep);
 						}
 						catch (NoSuchBeanDefinitionException ex) {
@@ -310,10 +367,19 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 					}
 				}
 
+				/**
+				 * ==============Spring确保bean的依赖不会循环End============
+				 */
+
 				// Create bean instance.
+				// Step3：创建bean实例
 				if (mbd.isSingleton()) {
 					sharedInstance = getSingleton(beanName, () -> {
+
+						// 接口`ObjectFactory<T>`的`T getObject() throws BeansException;`方法返回一个Object
+
 						try {
+							// 真正创建一个单例bean
 							return createBean(beanName, mbd, args);
 						}
 						catch (BeansException ex) {
@@ -329,6 +395,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				else if (mbd.isPrototype()) {
 					// It's a prototype -> create a new instance.
+					// 原型类的每次getBean都从新创建一个新的
 					Object prototypeInstance = null;
 					try {
 						beforePrototypeCreation(beanName);
@@ -1018,6 +1085,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	}
 
 	/**
+	 * 返回一个指定的原型bean是否已经在创建中(在当前线程中)。
+	 *
 	 * Return whether the specified prototype bean is currently in creation
 	 * (within the current thread).
 	 * @param beanName the name of the bean
@@ -1203,10 +1272,12 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	protected RootBeanDefinition getMergedLocalBeanDefinition(String beanName) throws BeansException {
 		// Quick check on the concurrent map first, with minimal locking.
+		// 快速检查下缓存，有缓存直接返回
 		RootBeanDefinition mbd = this.mergedBeanDefinitions.get(beanName);
 		if (mbd != null) {
 			return mbd;
 		}
+		// 从当前`DefaultListableBeanFactory`中取出bean定义，准备合并
 		return getMergedBeanDefinition(beanName, getBeanDefinition(beanName));
 	}
 
@@ -1258,13 +1329,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 				else {
 					// Child bean definition: needs to be merged with parent.
+					// 子类bean需要与父类bean定义合并
 					BeanDefinition pbd;
 					try {
+						// 父类bean定义
 						String parentBeanName = transformedBeanName(bd.getParentName());
 						if (!beanName.equals(parentBeanName)) {
+							// 如果bean的id不与父bean重复，则返回合并后的定义
 							pbd = getMergedBeanDefinition(parentBeanName);
 						}
 						else {
+							// bean的名称和父名重复，则可能父bean配置在父BeanFactory中
 							BeanFactory parent = getParentBeanFactory();
 							if (parent instanceof ConfigurableBeanFactory) {
 								pbd = ((ConfigurableBeanFactory) parent).getMergedBeanDefinition(parentBeanName);
@@ -1280,12 +1355,17 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 						throw new BeanDefinitionStoreException(bd.getResourceDescription(), beanName,
 								"Could not resolve parent bean definition '" + bd.getParentName() + "'", ex);
 					}
+
+					// 特别注意：最关键的bean属性继承方法!!!这个方法会一直递归拷贝覆盖bean的属性。
 					// Deep copy with overridden values.
+					// 对parent的bean定义进行深拷贝
 					mbd = new RootBeanDefinition(pbd);
+					// md覆盖继承mbd的属性
 					mbd.overrideFrom(bd);
 				}
 
 				// Set default singleton scope, if not configured before.
+				// 没有配置scope就用先前的scope
 				if (!StringUtils.hasLength(mbd.getScope())) {
 					mbd.setScope(RootBeanDefinition.SCOPE_SINGLETON);
 				}
@@ -1294,12 +1374,14 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// Let's correct this on the fly here, since this might be the result of
 				// parent-child merging for the outer bean, in which case the original inner bean
 				// definition will not have inherited the merged outer bean's singleton status.
+				// 持有非单例的bean自己也不能成为单例
 				if (containingBd != null && !containingBd.isSingleton() && mbd.isSingleton()) {
 					mbd.setScope(containingBd.getScope());
 				}
 
 				// Cache the merged bean definition for the time being
 				// (it might still get re-merged later on in order to pick up metadata changes)
+				// 缓存下bean定义，有可能还有其他子类bean需要继承
 				if (containingBd == null && isCacheBeanMetadata()) {
 					this.mergedBeanDefinitions.put(beanName, mbd);
 				}
