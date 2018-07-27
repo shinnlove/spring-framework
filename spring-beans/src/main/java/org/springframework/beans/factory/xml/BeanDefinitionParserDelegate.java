@@ -68,6 +68,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.util.xml.DomUtils;
 
 /**
+ * 有状态的、解析bean定义的委托类。
+ *
  * Stateful delegate class used to parse XML bean definitions.
  * Intended for use by both the main parser and any extension
  * {@link BeanDefinitionParser BeanDefinitionParsers} or
@@ -1352,17 +1354,27 @@ public class BeanDefinitionParserDelegate {
 		return parseCustomElement(ele, null);
 	}
 
+	/**
+	 * 解析自定义命名空间，这里自定义的`NamespaceHandler`是懒加载、懒映射的。
+	 *
+	 * @param ele
+	 * @param containingBd
+	 * @return
+	 */
 	@Nullable
 	public BeanDefinition parseCustomElement(Element ele, @Nullable BeanDefinition containingBd) {
 		String namespaceUri = getNamespaceURI(ele);
 		if (namespaceUri == null) {
 			return null;
 		}
+
+		// `XmlReaderContext`上下文中取出**定义在资源文件中的`NamespaceHandler`具体命名空间处理器**
 		NamespaceHandler handler = this.readerContext.getNamespaceHandlerResolver().resolve(namespaceUri);
 		if (handler == null) {
 			error("Unable to locate Spring NamespaceHandler for XML schema namespace [" + namespaceUri + "]", ele);
 			return null;
 		}
+		// 多态解析bean定义(形参当前解析元素、解析上下文)
 		return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
 	}
 

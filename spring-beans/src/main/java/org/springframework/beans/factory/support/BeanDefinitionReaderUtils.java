@@ -150,10 +150,13 @@ public final class BeanDefinitionReaderUtils {
 			throws BeanDefinitionStoreException {
 
 		// Register bean definition under primary name.
+		// (registerBeanDefinition注册默认实现在DefaultListableBeanFactory)
 		String beanName = definitionHolder.getBeanName();
+		// 使用注册器(应该是`defaultListableBeanFactory`)注册bean定义
 		registry.registerBeanDefinition(beanName, definitionHolder.getBeanDefinition());
 
 		// Register aliases for bean name, if any.
+		// SimpleAliasRegistry将别名放在hashMap中持有
 		String[] aliases = definitionHolder.getAliases();
 		if (aliases != null) {
 			for (String alias : aliases) {

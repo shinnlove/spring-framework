@@ -21,6 +21,8 @@ import org.springframework.core.ResolvableType;
 import org.springframework.lang.Nullable;
 
 /**
+ * 访问spring bean容器的根接口。
+ *
  * The root interface for accessing a Spring bean container.
  * This is the basic client view of a bean container;
  * further interfaces such as {@link ListableBeanFactory} and
@@ -125,6 +127,8 @@ public interface BeanFactory {
 
 
 	/**
+	 * 常用：从BeanFactory中根据名称找到一个bean，返回Object类型的bean(需要强转)。
+	 *
 	 * Return an instance, which may be shared or independent, of the specified bean.
 	 * <p>This method allows a Spring BeanFactory to be used as a replacement for the
 	 * Singleton or Prototype design pattern. Callers may retain references to
@@ -140,6 +144,8 @@ public interface BeanFactory {
 	Object getBean(String name) throws BeansException;
 
 	/**
+	 * 常用：给定bean的id和Class类型，返回给定类型的bean实例。
+	 *
 	 * Return an instance, which may be shared or independent, of the specified bean.
 	 * <p>Behaves the same as {@link #getBean(String)}, but provides a measure of type
 	 * safety by throwing a BeanNotOfRequiredTypeException if the bean is not of the
@@ -176,6 +182,10 @@ public interface BeanFactory {
 	Object getBean(String name, Object... args) throws BeansException;
 
 	/**
+	 * 常用：给定Class类型从容器中获取bean实例。
+	 *
+	 * 特别注意：如果获取的是某种接口类型而容器中有多余1个的实现，则会抛出`NoSuchBeanDefinitionException`的异常。
+	 *
 	 * Return the bean instance that uniquely matches the given object type, if any.
 	 * <p>This method goes into {@link ListableBeanFactory} by-type lookup territory
 	 * but may also be translated into a conventional by-name lookup based on the name
@@ -215,6 +225,8 @@ public interface BeanFactory {
 
 
 	/**
+	 * 常用：检测spring容器中是否包含某个id的bean实例。
+	 *
 	 * Does this bean factory contain a bean definition or externally registered singleton
 	 * instance with the given name?
 	 * <p>If the given name is an alias, it will be translated back to the corresponding
@@ -301,6 +313,8 @@ public interface BeanFactory {
 	boolean isTypeMatch(String name, @Nullable Class<?> typeToMatch) throws NoSuchBeanDefinitionException;
 
 	/**
+	 * 常用：给定一个bean的id获取这个bean实例的Class类型。
+	 *
 	 * Determine the type of the bean with the given name. More specifically,
 	 * determine the type of object that {@link #getBean} would return for the given name.
 	 * <p>For a {@link FactoryBean}, return the type of object that the FactoryBean creates,

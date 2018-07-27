@@ -166,6 +166,8 @@ public abstract class BeanUtils {
 		Assert.notNull(ctor, "Constructor must not be null");
 		try {
 			ReflectionUtils.makeAccessible(ctor);
+			// Kotlin语言：https://baike.baidu.com/item/Kotlin/1133714?fr=aladdin
+			// 如果是JAVA类型直接使用构造器的newInstance方法来生成一个实例。
 			return (KotlinDetector.isKotlinType(ctor.getDeclaringClass()) ?
 					KotlinDelegate.instantiateClass(ctor, args) : ctor.newInstance(args));
 		}

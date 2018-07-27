@@ -19,6 +19,14 @@ package org.springframework.beans.factory.config;
 import org.springframework.beans.BeansException;
 
 /**
+ * 容器后处理器负责处理容器本身的接口。
+ *
+ * 特别注意：
+ * 	如果使用`ApplicationContext`作为容器，容器会自动调用`BeanFactoryPostProcessor`来处理spring容器；
+ * 	如果使用`BeanFactory`作为spring容器，则必须手动调用容器后处理器来处理spring容器。
+ *
+ * 	**spring没有提供`ApplicationContextPostProcessor`，使用`ApplicationContext`作为容器一样也是实现本接口。**
+ *
  * Allows for custom modification of an application context's bean definitions,
  * adapting the bean property values of the context's underlying bean factory.
  *
