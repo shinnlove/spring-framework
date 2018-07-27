@@ -17,6 +17,8 @@
 package org.aopalliance.aop;
 
 /**
+ * Advice——通知，定义在连接点做什么，提供织入接口，是AOP联盟定义的一个接口。
+ *
  * Tag interface for Advice. Implementations can be any type
  * of advice, such as Interceptors.
  *
