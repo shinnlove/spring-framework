@@ -524,6 +524,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		initLocaleResolver(context);
 		initThemeResolver(context);
 		initHandlerMappings(context);
+		// 初始化处理器适配器(从applicationContext中找handlerAdapter、找不到就使用默认的.properties中的)
 		initHandlerAdapters(context);
 		initHandlerExceptionResolvers(context);
 		initRequestToViewNameTranslator(context);
@@ -659,6 +660,8 @@ public class DispatcherServlet extends FrameworkServlet {
 	}
 
 	/**
+	 * 初始化`DispatcherServlet`中的处理器适配器列表[HandlerAdapters]。
+	 *
 	 * Initialize the HandlerAdapters used by this class.
 	 * <p>If no HandlerAdapter beans are defined in the BeanFactory for this namespace,
 	 * we default to SimpleControllerHandlerAdapter.
@@ -666,18 +669,24 @@ public class DispatcherServlet extends FrameworkServlet {
 	private void initHandlerAdapters(ApplicationContext context) {
 		this.handlerAdapters = null;
 
+		// 默认自动发现全量applicationContext中的handlerAdapter(包括父context)
 		if (this.detectAllHandlerAdapters) {
 			// Find all HandlerAdapters in the ApplicationContext, including ancestor contexts.
+			// 从spring上下文(包括parent上下文)环境中找到所有的`HandlerAdapter.class`类型的处理器适配器
+
 			Map<String, HandlerAdapter> matchingBeans =
 					BeanFactoryUtils.beansOfTypeIncludingAncestors(context, HandlerAdapter.class, true, false);
 			if (!matchingBeans.isEmpty()) {
+				// 有配置若干个适配器，就按照`@Order`注解来排序
 				this.handlerAdapters = new ArrayList<>(matchingBeans.values());
 				// We keep HandlerAdapters in sorted order.
 				AnnotationAwareOrderComparator.sort(this.handlerAdapters);
 			}
 		}
 		else {
+			// 不包含父context
 			try {
+				// 返回上下文中名为`handlerAdapter`的、`HandlerAdapter.class`类型的处理器适配器，包装成不可更改的唯一处理器适配器。
 				HandlerAdapter ha = context.getBean(HANDLER_ADAPTER_BEAN_NAME, HandlerAdapter.class);
 				this.handlerAdapters = Collections.singletonList(ha);
 			}
@@ -688,6 +697,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		// Ensure we have at least some HandlerAdapters, by registering
 		// default HandlerAdapters if no other adapters are found.
+		// 为了确保至少有处理器适配器，所以如果没找到配置的处理器就生成一个默认的
 		if (this.handlerAdapters == null) {
 			this.handlerAdapters = getDefaultStrategies(context, HandlerAdapter.class);
 			if (logger.isTraceEnabled()) {
@@ -882,6 +892,8 @@ public class DispatcherServlet extends FrameworkServlet {
 	}
 
 	/**
+	 * 通用方法，为给出接口生成一类默认策略。
+	 *
 	 * Create a List of default strategy objects for the given strategy interface.
 	 * <p>The default implementation uses the "DispatcherServlet.properties" file (in the same
 	 * package as the DispatcherServlet class) to determine the class names. It instantiates
@@ -892,14 +904,19 @@ public class DispatcherServlet extends FrameworkServlet {
 	 */
 	@SuppressWarnings("unchecked")
 	protected <T> List<T> getDefaultStrategies(ApplicationContext context, Class<T> strategyInterface) {
+		// 例如key是`HandlerAdapter`
 		String key = strategyInterface.getName();
 		String value = defaultStrategies.getProperty(key);
 		if (value != null) {
+			// 默认配置不空则切成数组(默认以逗号来分隔)
 			String[] classNames = StringUtils.commaDelimitedListToStringArray(value);
+			// 最终生成的策略数组(给出任何类型)
 			List<T> strategies = new ArrayList<>(classNames.length);
 			for (String className : classNames) {
 				try {
+					// 使用反射，通过`DispatcherServlet`的classLoader加载(其实就是AppClassLoader)
 					Class<?> clazz = ClassUtils.forName(className, DispatcherServlet.class.getClassLoader());
+					// 特别注意：神奇的一步->使用`AutowireCapableBeanFactory`生成这种策略
 					Object strategy = createDefaultStrategy(context, clazz);
 					strategies.add((T) strategy);
 				}
@@ -937,6 +954,8 @@ public class DispatcherServlet extends FrameworkServlet {
 
 
 	/**
+	 * DispatcherServlet实际暴露的分发入口。
+	 *
 	 * Exposes the DispatcherServlet-specific request attributes and delegates to {@link #doDispatch}
 	 * for the actual dispatching.
 	 */
@@ -1018,6 +1037,8 @@ public class DispatcherServlet extends FrameworkServlet {
 	}
 
 	/**
+	 * 将实际的请求处理分发到每个handler上。
+	 *
 	 * Process the actual dispatching to the handler.
 	 * <p>The handler will be obtained by applying the servlet's HandlerMappings in order.
 	 * The HandlerAdapter will be obtained by querying the servlet's installed HandlerAdapters
@@ -1044,13 +1065,16 @@ public class DispatcherServlet extends FrameworkServlet {
 				multipartRequestParsed = (processedRequest != request);
 
 				// Determine handler for the current request.
+				// 为当前的请求找到处理器请求链
 				mappedHandler = getHandler(processedRequest);
 				if (mappedHandler == null) {
+					// 这种case连defaultHandler都没有找到
 					noHandlerFound(processedRequest, response);
 					return;
 				}
 
 				// Determine handler adapter for the current request.
+				// 为这个处理器找到处理器适配器(将`HandlerMethod`包装成`HandlerAdapter`)
 				HandlerAdapter ha = getHandlerAdapter(mappedHandler.getHandler());
 
 				// Process last-modified header, if supported by the handler.
@@ -1063,21 +1087,26 @@ public class DispatcherServlet extends FrameworkServlet {
 					}
 				}
 
+				// handler的前置钩子：真正执行处理链中的每个HandlerInterceptor，如果返回false则打断链式调用，传入的形参response直接将会成为最终输出!!!
 				if (!mappedHandler.applyPreHandle(processedRequest, response)) {
 					return;
 				}
 
 				// Actually invoke the handler.
+				// 真正调用处理器(普通请求进入`AbstractHandlerMethodAdapter`)，返回模型视图
 				mv = ha.handle(processedRequest, response, mappedHandler.getHandler());
 
 				if (asyncManager.isConcurrentHandlingStarted()) {
 					return;
 				}
 
+				// 解析视图名
 				applyDefaultViewName(processedRequest, mv);
+				// handler的后置钩子：执行完handler的处理方法后、即将渲染视图之前调用`HandlerInterceptor`的postHandler
 				mappedHandler.applyPostHandle(processedRequest, response, mv);
 			}
 			catch (Exception ex) {
+				// !!!特别注意->在Controller中抛出的错误都会到这里
 				dispatchException = ex;
 			}
 			catch (Throwable err) {
@@ -1085,9 +1114,13 @@ public class DispatcherServlet extends FrameworkServlet {
 				// making them available for @ExceptionHandler methods and other scenarios.
 				dispatchException = new NestedServletException("Handler dispatch failed", err);
 			}
+
+			// 最终处理dispatch的分发结果
 			processDispatchResult(processedRequest, response, mappedHandler, mv, dispatchException);
 		}
 		catch (Exception ex) {
+			// 出现无法用视图解析的异常、先完成请求调用，再抛出异常让上层解析
+			// 但实际上抛出去上层也不会解析、因此Tomcat中直接出现错误堆栈
 			triggerAfterCompletion(processedRequest, response, mappedHandler, ex);
 		}
 		catch (Throwable err) {
@@ -1123,6 +1156,8 @@ public class DispatcherServlet extends FrameworkServlet {
 	}
 
 	/**
+	 * 处理handler的结果，要么返回一个模型视图、要么抛出一个错误。
+	 *
 	 * Handle the result of handler selection and handler invocation, which is
 	 * either a ModelAndView or an Exception to be resolved to a ModelAndView.
 	 */
@@ -1132,6 +1167,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		boolean errorView = false;
 
+		// 如果在执行请求处理的时候发生了异常
 		if (exception != null) {
 			if (exception instanceof ModelAndViewDefiningException) {
 				logger.debug("ModelAndViewDefiningException encountered", exception);
@@ -1252,6 +1288,10 @@ public class DispatcherServlet extends FrameworkServlet {
 	}
 
 	/**
+	 * 从handlerMapping中找到一个请求需要的处理器执行链。
+	 *
+	 * 特别附加说明：handler是`HandlerMethod`、包裹在`HandlerExecutionChain`中。
+	 *
 	 * Return the HandlerExecutionChain for this request.
 	 * <p>Tries all handler mappings in order.
 	 * @param request current HTTP request
@@ -1260,8 +1300,10 @@ public class DispatcherServlet extends FrameworkServlet {
 	@Nullable
 	protected HandlerExecutionChain getHandler(HttpServletRequest request) throws Exception {
 		if (this.handlerMappings != null) {
+			// 遍历所有handlerMapping
 			for (HandlerMapping mapping : this.handlerMappings) {
 				HandlerExecutionChain handler = mapping.getHandler(request);
+				// 只要找到一个处理执行链就返回!!
 				if (handler != null) {
 					return handler;
 				}
@@ -1290,13 +1332,21 @@ public class DispatcherServlet extends FrameworkServlet {
 	}
 
 	/**
+	 * 为当前的handler找到适配器。
+	 *
+	 * 特别注意：只有`HandlerMethod`类型的handler才有适配器!!
+	 *
 	 * Return the HandlerAdapter for this handler object.
 	 * @param handler the handler object to find an adapter for
 	 * @throws ServletException if no HandlerAdapter can be found for the handler. This is a fatal error.
 	 */
 	protected HandlerAdapter getHandlerAdapter(Object handler) throws ServletException {
 		if (this.handlerAdapters != null) {
+			// 遍历所有处理器适配器
 			for (HandlerAdapter adapter : this.handlerAdapters) {
+				// 有`HttpRequestHandler`类型的适配器；`Controller`类型的适配器；`Servlet`类型的适配器。
+				// 只要一个适配当前handler的就返回
+				// 一般spring请求都会映射到`RequestMappingHandlerAdapter`适配器上
 				if (adapter.supports(handler)) {
 					return adapter;
 				}

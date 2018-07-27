@@ -33,10 +33,13 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.CollectionUtils;
 
 /**
+ * 命名空间解析器接口的默认实现。
+ *
  * Default implementation of the {@link NamespaceHandlerResolver} interface.
  * Resolves namespace URIs to implementation classes based on the mappings
  * contained in mapping file.
  *
+ * 可以通过构造函数传入String类型的location来改写默认配置，一般不这么做。
  * <p>By default, this implementation looks for the mapping file at
  * {@code META-INF/spring.handlers}, but this can be changed using the
  * {@link #DefaultNamespaceHandlerResolver(ClassLoader, String)} constructor.
@@ -50,6 +53,8 @@ import org.springframework.util.CollectionUtils;
 public class DefaultNamespaceHandlerResolver implements NamespaceHandlerResolver {
 
 	/**
+	 * 默认处理器路径：在`spring-beans`这个bundle下的资源文件中存放了默认的命名空间处理器。
+	 *
 	 * The location to look for the mapping files. Can be present in multiple JAR files.
 	 */
 	public static final String DEFAULT_HANDLER_MAPPINGS_LOCATION = "META-INF/spring.handlers";
@@ -71,6 +76,8 @@ public class DefaultNamespaceHandlerResolver implements NamespaceHandlerResolver
 
 
 	/**
+	 * 使用线程上下文的classLoader来加载命名空间解析器。
+	 *
 	 * Create a new {@code DefaultNamespaceHandlerResolver} using the
 	 * default mapping file location.
 	 * <p>This constructor will result in the thread context ClassLoader being used
@@ -82,6 +89,8 @@ public class DefaultNamespaceHandlerResolver implements NamespaceHandlerResolver
 	}
 
 	/**
+	 * 默认初始化、并且指定classLoader。
+	 *
 	 * Create a new {@code DefaultNamespaceHandlerResolver} using the
 	 * default mapping file location.
 	 * @param classLoader the {@link ClassLoader} instance used to load mapping resources
@@ -93,6 +102,8 @@ public class DefaultNamespaceHandlerResolver implements NamespaceHandlerResolver
 	}
 
 	/**
+	 * 通用构造方法，classLoader空就用线程上下文的classLoader。
+	 *
 	 * Create a new {@code DefaultNamespaceHandlerResolver} using the
 	 * supplied mapping file location.
 	 * @param classLoader the {@link ClassLoader} instance used to load mapping resources
@@ -121,17 +132,21 @@ public class DefaultNamespaceHandlerResolver implements NamespaceHandlerResolver
 			return null;
 		}
 		else if (handlerOrClassName instanceof NamespaceHandler) {
+			// handlerMapping存储的就是`NamespaceHandler`实例直接返回
 			return (NamespaceHandler) handlerOrClassName;
 		}
 		else {
+			// handlerMapping存储的是个字符串
 			String className = (String) handlerOrClassName;
 			try {
+				// 使用`默认命名空间解析器`构造时传入的`classLoader`来反射加载这个`NamespaceHandler`的`派生类`
 				Class<?> handlerClass = ClassUtils.forName(className, this.classLoader);
 				if (!NamespaceHandler.class.isAssignableFrom(handlerClass)) {
 					throw new FatalBeanException("Class [" + className + "] for namespace [" + namespaceUri +
 							"] does not implement the [" + NamespaceHandler.class.getName() + "] interface");
 				}
 				NamespaceHandler namespaceHandler = (NamespaceHandler) BeanUtils.instantiateClass(handlerClass);
+				// 多态初始化具体的Namespace
 				namespaceHandler.init();
 				handlerMappings.put(namespaceUri, namespaceHandler);
 				return namespaceHandler;
@@ -148,6 +163,8 @@ public class DefaultNamespaceHandlerResolver implements NamespaceHandlerResolver
 	}
 
 	/**
+	 * 懒加载命名空间解析器映射资源文件。
+	 *
 	 * Load the specified NamespaceHandler mappings lazily.
 	 */
 	private Map<String, Object> getHandlerMappings() {

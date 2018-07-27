@@ -48,6 +48,8 @@ import org.springframework.util.Assert;
 public abstract class DomUtils {
 
 	/**
+	 * 在DOM元素上检索给定元素名的子元素，特别注意：只是检索直接孩子元素，不进入孙代元素。
+	 *
 	 * Retrieves all child elements of the given DOM element that match any of the given element names.
 	 * Only looks at the direct child level of the given element; do not go into further depth
 	 * (in contrast to the DOM API's {@code getElementsByTagName} method).
