@@ -31,6 +31,8 @@ import org.springframework.core.BridgeMethodResolver;
 import org.springframework.lang.Nullable;
 
 /**
+ * spring反射调用方法切面。
+ *
  * Spring's implementation of the AOP Alliance
  * {@link org.aopalliance.intercept.MethodInvocation} interface,
  * implementing the extended
@@ -154,12 +156,19 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 		this.arguments = arguments;
 	}
 
-
+	/**
+	 * 这是一个递归调用每个通知器中的拦截方法、最后调用目标连接点方法的**递归**函数。
+	 *
+	 * @return
+	 * @throws Throwable
+	 */
 	@Override
 	@Nullable
 	public Object proceed() throws Throwable {
 		//	We start with an index of -1 and increment early.
+		// 下标从-1开始，先自加到0、再调用
 		if (this.currentInterceptorIndex == this.interceptorsAndDynamicMethodMatchers.size() - 1) {
+			// 使用`AopUtils`反射调用连接点
 			return invokeJoinpoint();
 		}
 
@@ -168,20 +177,25 @@ public class ReflectiveMethodInvocation implements ProxyMethodInvocation, Clonea
 		if (interceptorOrInterceptionAdvice instanceof InterceptorAndDynamicMethodMatcher) {
 			// Evaluate dynamic method matcher here: static part will already have
 			// been evaluated and found to match.
+			// 评估动态匹配
 			InterceptorAndDynamicMethodMatcher dm =
 					(InterceptorAndDynamicMethodMatcher) interceptorOrInterceptionAdvice;
 			if (dm.methodMatcher.matches(this.method, this.targetClass, this.arguments)) {
+				// 调用不同的匹配器匹配，如aspectj的：org.springframework.aop.aspectj.AspectJExpressionPointcut.matches(java.lang.reflect.Method, java.lang.Class<?>, java.lang.Object...)
+				// 若方法匹配中了则调用拦截器的方法
 				return dm.interceptor.invoke(this);
 			}
 			else {
 				// Dynamic matching failed.
 				// Skip this interceptor and invoke the next in the chain.
+				// 动态匹配失败，递归调用下一个(拦截器总是配置在链接中逐个取出匹配)
 				return proceed();
 			}
 		}
 		else {
 			// It's an interceptor, so we just invoke it: The pointcut will have
 			// been evaluated statically before this object was constructed.
+			// 对于静态拦截器类型只管调用就行，它的切点在它构建前早就静态估计好了
 			return ((MethodInterceptor) interceptorOrInterceptionAdvice).invoke(this);
 		}
 	}

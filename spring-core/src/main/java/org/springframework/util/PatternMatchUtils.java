@@ -19,6 +19,8 @@ package org.springframework.util;
 import org.springframework.lang.Nullable;
 
 /**
+ * 处理通配规则的公共方法。
+ *
  * Utility methods for simple pattern matching, in particular for
  * Spring's typical "xxx*", "*xxx" and "*xxx*" pattern styles.
  *

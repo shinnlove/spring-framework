@@ -38,6 +38,7 @@ import org.springframework.util.PatternMatchUtils;
 @SuppressWarnings("serial")
 public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut implements Serializable {
 
+	/** 字符串列表 */
 	private List<String> mappedNames = new LinkedList<>();
 
 
@@ -80,6 +81,7 @@ public class NameMatchMethodPointcut extends StaticMethodMatcherPointcut impleme
 	@Override
 	public boolean matches(Method method, @Nullable Class<?> targetClass) {
 		for (String mappedName : this.mappedNames) {
+			// 名字匹配或简单通配匹配
 			if (mappedName.equals(method.getName()) || isMatch(method.getName(), mappedName)) {
 				return true;
 			}

@@ -19,6 +19,8 @@ package org.springframework.beans.factory.xml;
 import org.springframework.lang.Nullable;
 
 /**
+ * 命名空间解析器接口，作用是根据namespace URI找到`NamespaceHandler`。
+ *
  * Used by the {@link org.springframework.beans.factory.xml.DefaultBeanDefinitionDocumentReader} to
  * locate a {@link NamespaceHandler} implementation for a particular namespace URI.
  *
@@ -31,6 +33,8 @@ import org.springframework.lang.Nullable;
 public interface NamespaceHandlerResolver {
 
 	/**
+	 * 解析命名空间URI并且返回一个命名空间处理器。
+	 *
 	 * Resolve the namespace URI and return the located {@link NamespaceHandler}
 	 * implementation.
 	 * @param namespaceUri the relevant namespace URI

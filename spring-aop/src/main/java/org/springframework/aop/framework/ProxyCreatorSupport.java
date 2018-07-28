@@ -95,6 +95,8 @@ public class ProxyCreatorSupport extends AdvisedSupport {
 
 
 	/**
+	 * 激活、并生成具体代理类，该方法被子类调用。
+	 *
 	 * Subclasses should call this to get a new AOP proxy. They should <b>not</b>
 	 * create an AOP proxy with {@code this} as an argument.
 	 */

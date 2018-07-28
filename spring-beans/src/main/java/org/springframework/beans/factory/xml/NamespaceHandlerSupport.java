@@ -28,6 +28,8 @@ import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.lang.Nullable;
 
 /**
+ * 实现`NamespaceHandler`接口的默认帮助类，持有`parsers`、`decorators`和`attributeDecorators`三种数据结构。
+ *
  * Support class for implementing custom {@link NamespaceHandler NamespaceHandlers}.
  * Parsing and decorating of individual {@link Node Nodes} is done via {@link BeanDefinitionParser}
  * and {@link BeanDefinitionDecorator} strategy interfaces, respectively.
@@ -45,6 +47,8 @@ import org.springframework.lang.Nullable;
 public abstract class NamespaceHandlerSupport implements NamespaceHandler {
 
 	/**
+	 * 以element上名称作为key、存放各类`BeanDefinitionParser`派生类的映射。
+	 *
 	 * Stores the {@link BeanDefinitionParser} implementations keyed by the
 	 * local name of the {@link Element Elements} they handle.
 	 */

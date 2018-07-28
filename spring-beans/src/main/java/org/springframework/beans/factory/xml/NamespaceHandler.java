@@ -24,6 +24,8 @@ import org.springframework.beans.factory.config.BeanDefinitionHolder;
 import org.springframework.lang.Nullable;
 
 /**
+ * 在Spring XML配置文件中处理自定义命名空间的基础接口，被`DefaultBeanDefinitionDocumentReader`类使用。
+ *
  * Base interface used by the {@link DefaultBeanDefinitionDocumentReader}
  * for handling custom namespaces in a Spring XML configuration file.
  *
@@ -49,6 +51,8 @@ import org.springframework.lang.Nullable;
 public interface NamespaceHandler {
 
 	/**
+	 * 在`DefaultBeanDefinitionDocumentReader`构造时、任何自定义元素被解析前调用init方法。
+	 *
 	 * Invoked by the {@link DefaultBeanDefinitionDocumentReader} after
 	 * construction but before any custom elements are parsed.
 	 * @see NamespaceHandlerSupport#registerBeanDefinitionParser(String, BeanDefinitionParser)

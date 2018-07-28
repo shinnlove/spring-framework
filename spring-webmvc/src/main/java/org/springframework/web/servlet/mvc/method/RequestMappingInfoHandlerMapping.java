@@ -47,6 +47,8 @@ import org.springframework.web.servlet.mvc.condition.NameValueExpression;
 import org.springframework.web.util.WebUtils;
 
 /**
+ * 定义请求和处理器方法映射的抽象类。
+ *
  * Abstract base class for classes for which {@link RequestMappingInfo} defines
  * the mapping between a request and a handler method.
  *
@@ -94,6 +96,8 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 	}
 
 	/**
+	 * 复写抽象类中对于`RequestMappingInfo`类型的比较方法。
+	 *
 	 * Provide a Comparator to sort RequestMappingInfos matched to a request.
 	 */
 	@Override
@@ -102,6 +106,8 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 	}
 
 	/**
+	 * 为当前请求：暴露URL模板中的变量、矩阵变量，生成media类型。
+	 *
 	 * Expose URI template variables, matrix variables, and producible media types in the request.
 	 * @see HandlerMapping#URI_TEMPLATE_VARIABLES_ATTRIBUTE
 	 * @see HandlerMapping#MATRIX_VARIABLES_ATTRIBUTE
@@ -109,8 +115,10 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 	 */
 	@Override
 	protected void handleMatch(RequestMappingInfo info, String lookupPath, HttpServletRequest request) {
+		// 打标
 		super.handleMatch(info, lookupPath, request);
 
+		// 最佳匹配、路径变量与解码后的路径变量
 		String bestPattern;
 		Map<String, String> uriVariables;
 
@@ -121,16 +129,21 @@ public abstract class RequestMappingInfoHandlerMapping extends AbstractHandlerMe
 		}
 		else {
 			bestPattern = patterns.iterator().next();
+			// uri路径变量提取
 			uriVariables = getPathMatcher().extractUriTemplateVariables(bestPattern, lookupPath);
+			// 解码路径变量(是从request请求的编码信息中获取编码集的)
+			// 先获取request.getCharacterEncoding()、再使用URLDecoder.decode(source)来解码
 		}
 
 		request.setAttribute(BEST_MATCHING_PATTERN_ATTRIBUTE, bestPattern);
 
+		// 是否要移除请求路径中的;（默认不需要）
 		if (isMatrixVariableContentAvailable()) {
 			Map<String, MultiValueMap<String, String>> matrixVars = extractMatrixVariables(request, uriVariables);
 			request.setAttribute(HandlerMapping.MATRIX_VARIABLES_ATTRIBUTE, matrixVars);
 		}
 
+		// 打标：`RequestMappingInfo`中包含类似输出`application/json;charset=UTF-8`的媒体类型
 		Map<String, String> decodedUriVariables = getUrlPathHelper().decodePathVariables(request, uriVariables);
 		request.setAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE, decodedUriVariables);
 

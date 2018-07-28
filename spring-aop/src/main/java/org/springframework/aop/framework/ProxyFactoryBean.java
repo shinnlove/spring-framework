@@ -51,6 +51,8 @@ import org.springframework.util.ClassUtils;
 import org.springframework.util.ObjectUtils;
 
 /**
+ * 一种spring工厂类的实现，在springBean工厂中生成AOP代理类。
+ *
  * {@link org.springframework.beans.factory.FactoryBean} implementation that builds an
  * AOP proxy based on beans in Spring {@link org.springframework.beans.factory.BeanFactory}.
  *
@@ -102,6 +104,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	/**  */
 	@Nullable
 	private String[] interceptorNames;
 
@@ -240,6 +243,11 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 
 
 	/**
+	 * 当客户端从本工厂Bean获取一个bean的时候返回一个**具体**的代理类。
+	 *
+	 * 上层调用：
+	 * org.springframework.beans.factory.support.FactoryBeanRegistrySupport#doGetObjectFromFactoryBean(org.springframework.beans.factory.FactoryBean, java.lang.String)
+	 *
 	 * Return a proxy. Invoked when clients obtain beans from this factory bean.
 	 * Create an instance of the AOP proxy to be returned by this factory.
 	 * The instance will be cached for a singleton, and create on each call to
@@ -249,6 +257,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 	@Override
 	@Nullable
 	public Object getObject() throws BeansException {
+		// 初始化通知器链???作用
 		initializeAdvisorChain();
 		if (isSingleton()) {
 			return getSingletonInstance();
@@ -327,6 +336,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 			}
 			// Initialize the shared singleton instance.
 			super.setFrozen(this.freezeProxy);
+			// 生成单例(create是多态、getProxy也是多态，如CGLib中使用`Enhancer`来创建、JDK代理中使用`Proxy.newInstance()`来创建)
 			this.singletonInstance = getProxy(createAopProxy());
 		}
 		return this.singletonInstance;
@@ -435,6 +445,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 			return;
 		}
 
+		// 如果配置了通知器
 		if (!ObjectUtils.isEmpty(this.interceptorNames)) {
 			if (this.beanFactory == null) {
 				throw new IllegalStateException("No BeanFactory available anymore (probably due to serialization) " +
@@ -458,6 +469,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 						throw new AopConfigException(
 								"Can only use global advisors or interceptors with a ListableBeanFactory");
 					}
+					// 通配则配置全局通知器
 					addGlobalAdvisor((ListableBeanFactory) this.beanFactory,
 							name.substring(0, name.length() - GLOBAL_SUFFIX.length()));
 				}
@@ -465,9 +477,11 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 				else {
 					// If we get here, we need to add a named interceptor.
 					// We must check if it's a singleton or prototype.
+					// 添加命名拦截器需要区别通知器bean是单例还是原型模式
 					Object advice;
 					if (this.singleton || this.beanFactory.isSingleton(name)) {
 						// Add the real Advisor/Advice to the chain.
+						// 单例的通知器则从bean工厂中取出这个bean
 						advice = this.beanFactory.getBean(name);
 					}
 					else {
@@ -475,6 +489,7 @@ public class ProxyFactoryBean extends ProxyCreatorSupport
 						// Avoid unnecessary creation of prototype bean just for advisor chain initialization.
 						advice = new PrototypePlaceholderAdvisor(name);
 					}
+					// 把通知器添加到链上(AdviceSupport维护了一个List)
 					addAdvisorOnChainCreation(advice, name);
 				}
 			}

@@ -181,6 +181,8 @@ public class ReaderContext {
 
 	/**
 	 * Fire an import-processed event.
+	 *
+	 * 向监听器发射一个载入处理的事件。
 	 */
 	public void fireImportProcessed(String importedResource, Resource[] actualResources, @Nullable Object source) {
 		this.eventListener.importProcessed(new ImportDefinition(importedResource, actualResources, source));

@@ -36,6 +36,8 @@ import org.springframework.web.servlet.mvc.condition.RequestMethodsRequestCondit
 import org.springframework.web.util.UrlPathHelper;
 
 /**
+ * 持有请求信息(如请求头、参数、消费、产出等)的信息映射类。
+ *
  * Request mapping information. Encapsulates the following request mapping conditions:
  * <ol>
  * <li>{@link PatternsRequestCondition}
@@ -240,6 +242,18 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 	}
 
 	/**
+	 * 两个`RequestMappingInfo`的具体比较，选出最匹配请求的一个。
+	 *
+	 * 按顺序比较有结果就返回：
+	 * 1、请求方法是否包含请求HEAD；
+	 * 2、路由规则比较；
+	 * 3、参数比较；
+	 * 4、请求头headers比较；
+	 * 5、消费头consumes比较；
+	 * 6、产出produces比较；
+	 * 7、映射方法多少比较；
+	 * 8、自定义类型比较。
+	 *
 	 * Compares "this" info (i.e. the current instance) with another info in the context of a request.
 	 * <p>Note: It is assumed both instances have been obtained via
 	 * {@link #getMatchingCondition(HttpServletRequest)} to ensure they have conditions with
@@ -249,6 +263,7 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 	public int compareTo(RequestMappingInfo other, HttpServletRequest request) {
 		int result;
 		// Automatic vs explicit HTTP HEAD mapping
+		// 精确HTTP HEAD映射
 		if (HttpMethod.HEAD.matches(request.getMethod())) {
 			result = this.methodsCondition.compareTo(other.getMethodsCondition(), request);
 			if (result != 0) {
@@ -259,6 +274,7 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 		if (result != 0) {
 			return result;
 		}
+		// params参数多的优先
 		result = this.paramsCondition.compareTo(other.getParamsCondition(), request);
 		if (result != 0) {
 			return result;
@@ -276,6 +292,7 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 			return result;
 		}
 		// Implicit (no method) vs explicit HTTP method mappings
+		// 没有指明映射和精确指定映射方法
 		result = this.methodsCondition.compareTo(other.getMethodsCondition(), request);
 		if (result != 0) {
 			return result;
@@ -408,7 +425,9 @@ public final class RequestMappingInfo implements RequestCondition<RequestMapping
 		RequestMappingInfo build();
 	}
 
-
+	/**
+	 * RequestMapping默认的生成器。
+	 */
 	private static class DefaultBuilder implements Builder {
 
 		private String[] paths = new String[0];

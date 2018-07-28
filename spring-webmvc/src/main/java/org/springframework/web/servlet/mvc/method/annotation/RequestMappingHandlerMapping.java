@@ -48,6 +48,8 @@ import org.springframework.web.servlet.mvc.method.RequestMappingInfo;
 import org.springframework.web.servlet.mvc.method.RequestMappingInfoHandlerMapping;
 
 /**
+ * 从`@RequestMapping`注解扫描出的处理器映射。
+ *
  * Creates {@link RequestMappingInfo} instances from type and method-level
  * {@link RequestMapping @RequestMapping} annotations in
  * {@link Controller @Controller} classes.
@@ -217,8 +219,10 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 	@Override
 	@Nullable
 	protected RequestMappingInfo getMappingForMethod(Method method, Class<?> handlerType) {
+		// 先扫描方法上的`@RequestMapping`
 		RequestMappingInfo info = createRequestMappingInfo(method);
 		if (info != null) {
+			// 再扫描类上的`@RequestMapping`
 			RequestMappingInfo typeInfo = createRequestMappingInfo(handlerType);
 			if (typeInfo != null) {
 				info = typeInfo.combine(info);
@@ -302,12 +306,19 @@ public class RequestMappingHandlerMapping extends RequestMappingInfoHandlerMappi
 			RequestMapping requestMapping, @Nullable RequestCondition<?> customCondition) {
 
 		RequestMappingInfo.Builder builder = RequestMappingInfo
+				// 映射路径
 				.paths(resolveEmbeddedValuesInPatterns(requestMapping.path()))
+				// GET/POST等方法
 				.methods(requestMapping.method())
+				// params={...}
 				.params(requestMapping.params())
+				// headers={...}
 				.headers(requestMapping.headers())
+				// consumes={...}
 				.consumes(requestMapping.consumes())
+				// produces={...}
 				.produces(requestMapping.produces())
+				// requestMapping可以用命名来做映射的~
 				.mappingName(requestMapping.name());
 		if (customCondition != null) {
 			builder.customCondition(customCondition);
