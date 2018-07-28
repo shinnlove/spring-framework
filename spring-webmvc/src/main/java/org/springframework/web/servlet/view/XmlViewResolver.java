@@ -150,6 +150,7 @@ public class XmlViewResolver extends AbstractCachingViewResolver
 		factory.setServletContext(getServletContext());
 
 		// Load XML resource with context-aware entity resolver.
+		// 构造XmlBeanDefinitionReader并且将factory注册进去，而后调用`loadBeanDefinitions`方法(解析的主入口函数)
 		XmlBeanDefinitionReader reader = new XmlBeanDefinitionReader(factory);
 		reader.setEnvironment(applicationContext.getEnvironment());
 		reader.setEntityResolver(new ResourceEntityResolver(applicationContext));

@@ -22,6 +22,8 @@ import org.springframework.aop.MethodMatcher;
 import org.springframework.lang.Nullable;
 
 /**
+ * 静态方法匹配的方便抽象超类，不需要关心运行时的参数。
+ *
  * Convenient abstract superclass for static method matchers, which don't care
  * about arguments at runtime.
  *
@@ -34,6 +36,15 @@ public abstract class StaticMethodMatcher implements MethodMatcher {
 		return false;
 	}
 
+	/**
+	 * 静态匹配——带参数的匹配不支持。
+	 *
+	 * @param method the candidate method
+	 * @param targetClass the target class (may be {@code null}, in which case
+	 * the candidate class must be taken to be the method's declaring class)
+	 * @param args arguments to the method
+	 * @return
+	 */
 	@Override
 	public final boolean matches(Method method, @Nullable Class<?> targetClass, Object... args) {
 		// should never be invoked because isRuntime() returns false

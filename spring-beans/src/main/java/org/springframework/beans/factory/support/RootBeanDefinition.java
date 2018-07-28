@@ -53,6 +53,7 @@ import org.springframework.util.Assert;
 @SuppressWarnings("serial")
 public class RootBeanDefinition extends AbstractBeanDefinition {
 
+	/** bean定义占位符 */
 	@Nullable
 	private BeanDefinitionHolder decoratedDefinition;
 
@@ -74,10 +75,10 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	@Nullable
 	volatile ResolvableType factoryMethodReturnType;
 
-	/** Common lock for the four constructor fields below. */
+	/** Common lock for the four constructor fields below. 下面4个构造器字段的公共锁 */
 	final Object constructorArgumentLock = new Object();
 
-	/** Package-visible field for caching the resolved constructor or factory method. */
+	/** Package-visible field for caching the resolved constructor or factory method. 缓存构造器方法或者工厂方法 */
 	@Nullable
 	Executable resolvedConstructorOrFactoryMethod;
 

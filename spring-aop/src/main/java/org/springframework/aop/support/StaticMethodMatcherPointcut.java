@@ -21,6 +21,8 @@ import org.springframework.aop.MethodMatcher;
 import org.springframework.aop.Pointcut;
 
 /**
+ * 即便子类想要成为切点也强制子类去实现{@link MethodMatcher}方法。
+ *
  * Convenient superclass when we want to force subclasses to implement the
  * {@link MethodMatcher} interface but subclasses will want to be pointcuts.
  *

@@ -41,6 +41,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.util.WebUtils;
 
 /**
+ * 本类扩展自实现了servlet规范的`ServletRequestAttributes`类、并且实现暴露原始请求和响应的接口。
+ *
  * {@link WebRequest} adapter for an {@link javax.servlet.http.HttpServletRequest}.
  *
  * @author Juergen Hoeller

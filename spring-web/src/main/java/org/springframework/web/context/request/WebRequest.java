@@ -24,6 +24,8 @@ import java.util.Map;
 import org.springframework.lang.Nullable;
 
 /**
+ * Web请求通用接口，让`Web请求拦截器`生成请求元数据的方法。
+ *
  * Generic interface for a web request. Mainly intended for generic web
  * request interceptors, giving them access to general request metadata,
  * not for actual handling of the request.

@@ -20,6 +20,8 @@ import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.handler.HandlerMethodMappingNamingStrategy;
 
 /**
+ * `RequestMappingInfo`类型处理器的mapping命名规则。
+ *
  * A {@link org.springframework.web.servlet.handler.HandlerMethodMappingNamingStrategy
  * HandlerMethodMappingNamingStrategy} for {@code RequestMappingInfo}-based handler
  * method mappings.
@@ -38,12 +40,20 @@ public class RequestMappingInfoHandlerMethodMappingNamingStrategy
 	/** Separator between the type and method-level parts of a HandlerMethod mapping name. */
 	public static final String SEPARATOR = "#";
 
-
+	/**
+	 * 命名规则是：`@RequestMapping`的`name`属性、或是处理器类名的字符，用`#`分隔符。
+	 *
+	 * @param handlerMethod the handler method
+	 * @param mapping the mapping
+	 * @return
+	 */
 	@Override
 	public String getName(HandlerMethod handlerMethod, RequestMappingInfo mapping) {
+		// 一般情况下都不会定义name
 		if (mapping.getName() != null) {
 			return mapping.getName();
 		}
+
 		StringBuilder sb = new StringBuilder();
 		String simpleTypeName = handlerMethod.getBeanType().getSimpleName();
 		for (int i = 0 ; i < simpleTypeName.length(); i++) {

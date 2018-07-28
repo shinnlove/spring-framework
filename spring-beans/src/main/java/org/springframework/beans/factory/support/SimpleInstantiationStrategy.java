@@ -56,7 +56,16 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 		return currentlyInvokedFactoryMethod.get();
 	}
 
-
+	/**
+	 * 实例化一个bean或者使用CGLIB来实例化有方法覆盖的bean。
+	 *
+	 * @param bd the bean definition
+	 * @param beanName the name of the bean when it's created in this context.
+	 * The name can be {@code null} if we're autowiring a bean which doesn't
+	 * belong to the factory.
+	 * @param owner the owning BeanFactory
+	 * @return
+	 */
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		// Don't override the class with CGLIB if no overrides.
@@ -67,6 +76,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 				if (constructorToUse == null) {
 					final Class<?> clazz = bd.getBeanClass();
 					if (clazz.isInterface()) {
+						// Class<?>是接口类型不能被实例化
 						throw new BeanInstantiationException(clazz, "Specified class is an interface");
 					}
 					try {
@@ -75,8 +85,10 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 									(PrivilegedExceptionAction<Constructor<?>>) clazz::getDeclaredConstructor);
 						}
 						else {
+							// 获取默认定义的构造器
 							constructorToUse =	clazz.getDeclaredConstructor();
 						}
+						// 放入缓存中
 						bd.resolvedConstructorOrFactoryMethod = constructorToUse;
 					}
 					catch (Throwable ex) {
@@ -88,6 +100,8 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 		}
 		else {
 			// Must generate CGLIB subclass.
+			// bean有override方法就使用`CGLIB`子类来做实例化与方法注入
+			// CGLIB生成子类、并且使用`LookupOverrideMethodInterceptor`或`ReplaceOverrideMethodInterceptor`来拦截override的方法!
 			return instantiateWithMethodInjection(bd, beanName, owner);
 		}
 	}

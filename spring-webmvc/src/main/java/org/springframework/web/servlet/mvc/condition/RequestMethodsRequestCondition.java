@@ -147,6 +147,8 @@ public final class RequestMethodsRequestCondition extends AbstractRequestConditi
 	}
 
 	/**
+	 * 如果当前实例有HTTP请求信息、但是待比较的没有，则返回-1(当前实例优先级高)；反之亦然。
+	 *
 	 * Returns:
 	 * <ul>
 	 * <li>0 if the two conditions contain the same number of HTTP request methods
@@ -159,10 +161,12 @@ public final class RequestMethodsRequestCondition extends AbstractRequestConditi
 	 */
 	@Override
 	public int compareTo(RequestMethodsRequestCondition other, HttpServletRequest request) {
+		// RequestMethod的数量不等，数量多的优先
 		if (other.methods.size() != this.methods.size()) {
 			return other.methods.size() - this.methods.size();
 		}
 		else if (this.methods.size() == 1) {
+			// HEAD优先级比GET
 			if (this.methods.contains(RequestMethod.HEAD) && other.methods.contains(RequestMethod.GET)) {
 				return -1;
 			}

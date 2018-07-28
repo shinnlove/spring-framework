@@ -31,6 +31,8 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.util.WebUtils;
 
 /**
+ * 实现了servlet规范的一个类，持有规范的`HttpServletRequest`、`HttpServletResponse`、`HttpSession`对象。
+ *
  * Servlet-based implementation of the {@link RequestAttributes} interface.
  *
  * <p>Accesses objects from servlet request and HTTP session scope,
@@ -59,12 +61,14 @@ public class ServletRequestAttributes extends AbstractRequestAttributes {
 		immutableValueTypes.add(String.class);
 	}
 
-
+	/** 持有`HttpServletRequest`请求对象(servlet规范) */
 	private final HttpServletRequest request;
 
+	/** 持有`HttpServletResponse`响应对象(servlet规范) */
 	@Nullable
 	private HttpServletResponse response;
 
+	/** servlet规范session */
 	@Nullable
 	private volatile HttpSession session;
 

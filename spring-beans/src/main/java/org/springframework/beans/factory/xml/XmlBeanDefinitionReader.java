@@ -51,6 +51,44 @@ import org.springframework.util.xml.SimpleSaxErrorHandler;
 import org.springframework.util.xml.XmlValidationModeDetector;
 
 /**
+ * 解析XML配置形式的bean的bean定义读取器。
+ *
+ * 重要：
+ * 在注册bean定义的时候，
+ * 首先本类`XMLBeanDefinitionReader`创建并持有`DefaultBeanDefinitionDocumentReader`文档读取器，
+ * 其次`XMLBeanDefinitionReader`构建了`XMLReaderContext`上下文、并且初始化了一个`DefaultNamespaceHandlerResolver`-"默认命名空间解析器"给这个上下文!!!
+ * 再次将创建的`XmlReaderContext`上下文传入`DefaultBeanDefinitionDocumentReader`文档读取器中，
+ *
+ * 接着`DefaultBeanDefinitionDocumentReader`文档读取器创建了一个委托->`BeanDefinitionParserDelegate`解析代理对象，并将`XMLReaderContext`上下文传入代理对象中，
+ * 这个`解析代理对象`还持有`DocumentDefaultsDefinition`文档默认定义，它能判断是否默认的命名空间、判断XML文档结点名称；
+ *
+ * **当这个`解析代理对象`解析自定义元素的时候，会从持有的`XmlReaderContext`上下文对象中拿出`DefaultNamespaceHandlerResolver`命名空间解析器来解析!!!**
+ *
+ * 默认命名空间解析器中存放了一份`handlerMapping`，用来映射各类命名空间和对应自定义的`NamespaceHandler`关系，
+ * 这个映射关系是懒加载的，从本bundle的`resources/META-INF/spring.handlers`中加载——如`spring mvc`bundle下的资源文件中有如下定义：
+ * http\://www.springframework.org/schema/mvc=org.springframework.web.servlet.config.MvcNamespaceHandler
+ * 这个`MvcNamespaceHandler`就定义了`<mvc:xxx/>`这类标签应该由哪个`BeanDefinitionParser`的派生类来解析，这个关系是`Map<String, BeanDefinitionParser> parsers`类型的。
+ * (`MvcNamespaceHandler`扩展自`NamespaceHandlerSupport`，它是个持有parsers映射、decorators映射、attr等映射的自定义命名空间处理器抽象支持类。)
+ *
+ * 根据namespaceUri从`默认命名空间解析器`的`handlerMapping`中找出的是具体`NamespaceHandler`命名空间处理器的全类名!!!
+ * spring使用反射将其实例化，马上调用`NamespaceHandler`接口中的init()方法将各类标签key的parsers解析映射注册好。
+ * 懒加载前某个命名空间映射的是全类名，懒加载后就是具体处理器对象了，这是动态new出来的、并不是spring bean工厂里的！
+ *
+ * 自定义`NamespaceHandler`多态解析的时候，传入当前解析的元素和解析上下文`ParseContext`。
+ * 这个解析方法属于`NamespaceHandlerSupport`，因为自定义的命名空间解析器都继承自它。
+ * **然后`support`从映射关系parsers中根据元素名找到对应的`BeanDefinitionParser`的导出类进行解析!!!元素和上下文会透传。**
+ *
+ * 如果解析的是类似`<mvc:xxx/>`标签，那么此时就进入了`InterceptorsBeanDefinitionParser`中。
+ * `解析上下文`这个形参的奥义就是持有`XMLReaderContext`，而这个上下文持有注册钩子——本类`XmlBeanDefinitionReader`，可以随时向`DefaultListableBeanFactory`注册解析出来的bean。
+ *
+ * 解析过程中可能遇到嵌套的关系，用如下方法可以递归解析子级元素：
+ * DomUtils.getChildElementsByTagName(Element element, String... childEleNames);
+ *
+ * 解析后通过`BeanDefinition`的构造器`ConstructorArgumentValues`元素创建bean的定义，随后注册到spring的bean工厂中。
+ *
+ * 至此、递归完成默认命名空间元素、自定义命名空间元素、自定义命名空间解析器如何解析自定义元素的过程。
+ *
+ *
  * Bean definition reader for XML bean definitions.
  * Delegates the actual XML document reading to an implementation
  * of the {@link BeanDefinitionDocumentReader} interface.
@@ -105,6 +143,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 	private boolean namespaceAware = false;
 
+	/** 持有默认的`DefaultBeanDefinitionDocumentReader`bean定义文档读取器 */
 	private Class<?> documentReaderClass = DefaultBeanDefinitionDocumentReader.class;
 
 	private ProblemReporter problemReporter = new FailFastProblemReporter();
@@ -113,6 +152,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 	private SourceExtractor sourceExtractor = new NullSourceExtractor();
 
+	/** 命名空间解析器，采用"饿汉式"方式懒初始化`DefaultNamespaceHandlerResolver`命名空间解析器。 */
 	@Nullable
 	private NamespaceHandlerResolver namespaceHandlerResolver;
 
@@ -293,6 +333,8 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 
 	/**
+	 * 从XML读取文件的主要入口。
+	 *
 	 * Load bean definitions from the specified XML file.
 	 * @param resource the resource descriptor for the XML file
 	 * @return the number of bean definitions found
@@ -305,7 +347,8 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 	/**
 	 * Load bean definitions from the specified XML file.
-	 * @param encodedResource the resource descriptor for the XML file,
+	 * @param encodedResource the resource descriptor for the XML file,		指定字符集和编码集的资源文件
+	 *                        主要是得到：encodedResource.getResource().getInputStream();
 	 * allowing to specify an encoding to use for parsing the file
 	 * @return the number of bean definitions found
 	 * @throws BeanDefinitionStoreException in case of loading or parsing errors
@@ -326,12 +369,15 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 					"Detected cyclic loading of " + encodedResource + " - check your import definitions!");
 		}
 		try {
+			// 获取编码后的资源流转成byte[]数组
+			// 注意`InputStreamSource`中的`getInputStream()`方法可以被重载，比如用velocity引擎渲染一把等
 			InputStream inputStream = encodedResource.getResource().getInputStream();
 			try {
 				InputSource inputSource = new InputSource(inputStream);
 				if (encodedResource.getEncoding() != null) {
 					inputSource.setEncoding(encodedResource.getEncoding());
 				}
+				// 真正做bean定义解析加载
 				return doLoadBeanDefinitions(inputSource, encodedResource.getResource());
 			}
 			finally {
@@ -376,6 +422,10 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 
 
 	/**
+	 * 使用SAX方式解析XML文档，然后注册到bean工厂中。
+	 *
+	 * `InputSource`只是简单的包装了一个二进制流`InputStream`。
+	 *
 	 * Actually load bean definitions from the specified XML file.
 	 * @param inputSource the SAX InputSource to read from
 	 * @param resource the resource descriptor for the XML file
@@ -489,6 +539,8 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	}
 
 	/**
+	 * 本类在注册bean定义的时候，构造了`BeanDefinitionDocumentReader`读取器、初始化了`XmlReaderContext`上下文。
+	 *
 	 * Register the bean definitions contained in the given DOM document.
 	 * Called by {@code loadBeanDefinitions}.
 	 * <p>Creates a new instance of the parser class and invokes
@@ -504,6 +556,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	public int registerBeanDefinitions(Document doc, Resource resource) throws BeanDefinitionStoreException {
 		BeanDefinitionDocumentReader documentReader = createBeanDefinitionDocumentReader();
 		int countBefore = getRegistry().getBeanDefinitionCount();
+		// 使用reader注册bean定义的时候先要创建reader的上下文(上下文的reader就是自己this、并且初始化一个默认的`DefaultNamespaceHandlerResolver`解析器)
 		documentReader.registerBeanDefinitions(doc, createReaderContext(resource));
 		return getRegistry().getBeanDefinitionCount() - countBefore;
 	}
@@ -527,10 +580,13 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	}
 
 	/**
+	 * 采用"饿汉式"方式懒初始化`DefaultNamespaceHandlerResolver`命名空间解析器。
+	 *
 	 * Lazily create a default NamespaceHandlerResolver, if not set before.
 	 * @see #createDefaultNamespaceHandlerResolver()
 	 */
 	public NamespaceHandlerResolver getNamespaceHandlerResolver() {
+		//
 		if (this.namespaceHandlerResolver == null) {
 			this.namespaceHandlerResolver = createDefaultNamespaceHandlerResolver();
 		}
@@ -538,6 +594,8 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	}
 
 	/**
+	 * 优先使用资源文件的classLoader、其次使用bean的classLoader来创建默认命名空间解析器。
+	 *
 	 * Create the default implementation of {@link NamespaceHandlerResolver} used if none is specified.
 	 * Default implementation returns an instance of {@link DefaultNamespaceHandlerResolver}.
 	 */
