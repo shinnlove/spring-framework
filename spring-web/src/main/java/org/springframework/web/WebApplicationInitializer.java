@@ -20,14 +20,23 @@ import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 
 /**
+ * 编程式配置`ServletContext`上下文环境的接口（作用等同于在web.xml中配置`servlet`元素）。
+ *
  * Interface to be implemented in Servlet 3.0+ environments in order to configure the
  * {@link ServletContext} programmatically -- as opposed to (or possibly in conjunction
  * with) the traditional {@code web.xml}-based approach.
+ *
+ * 这个SPI接口会自动被`SpringServletContainerInitializer`所发现，
+ * 而`SpringServletContainerInitializer`是由`servlet3.0`规范容器——`tomcat`自行启动的（自行启动机制参见类中doc）。
  *
  * <p>Implementations of this SPI will be detected automatically by {@link
  * SpringServletContainerInitializer}, which itself is bootstrapped automatically
  * by any Servlet 3.0 container. See {@linkplain SpringServletContainerInitializer its
  * Javadoc} for details on this bootstrapping mechanism.
+ *
+ * 例子，传统的XML注册方式：
+ * 在`WEB-INF/web.xml`文件中使用`<servlet></servlet>`类的标签，
+ * 指定`servlet`使用spring的`DispatcherServlet`并且指定上下文配置——`contextConfigLocation`。
  *
  * <h2>Example</h2>
  * <h3>The traditional, XML-based approach</h3>
@@ -51,6 +60,12 @@ import javax.servlet.ServletException;
  *   &lt;servlet-name&gt;dispatcher&lt;/servlet-name&gt;
  *   &lt;url-pattern&gt;/&lt;/url-pattern&gt;
  * &lt;/servlet-mapping&gt;</pre>
+ *
+ * 使用代码方式来注册`servlet`的方法是：
+ * (1)、创建一个web应用的上下文环境；
+ * (2)、设置配置文件；
+ * (3)、为应用添加一个`servlet`；
+ * (4)、为应用添加`servlet`受理的`mapping`。
  *
  * <h3>The code-based approach with {@code WebApplicationInitializer}</h3>
  * Here is the equivalent {@code DispatcherServlet} registration logic,

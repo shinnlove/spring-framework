@@ -75,26 +75,33 @@ public abstract class AbstractDispatcherServletInitializer extends AbstractConte
 	 * @param servletContext the context to register the servlet against
 	 */
 	protected void registerDispatcherServlet(ServletContext servletContext) {
+		// `servlet`名称默认`dispatcher`
 		String servletName = getServletName();
 		Assert.hasLength(servletName, "getServletName() must not return null or empty");
 
+		// web应用上下文
 		WebApplicationContext servletAppContext = createServletApplicationContext();
 		Assert.notNull(servletAppContext, "createServletApplicationContext() must not return null");
 
+		// 创建`servlet`容器
 		FrameworkServlet dispatcherServlet = createDispatcherServlet(servletAppContext);
 		Assert.notNull(dispatcherServlet, "createDispatcherServlet(WebApplicationContext) must not return null");
 		dispatcherServlet.setContextInitializers(getServletApplicationContextInitializers());
 
+		// 向tomcat等容器动态注册一个servlet
+		// (`ServletRegistration.Dynamic`是servlet规范)
 		ServletRegistration.Dynamic registration = servletContext.addServlet(servletName, dispatcherServlet);
 		if (registration == null) {
 			throw new IllegalStateException("Failed to register servlet with name '" + servletName + "'. " +
 					"Check if there is another servlet registered under the same name.");
 		}
 
+		// `servlet`加载就启动、mapping映射和异步受理支持
 		registration.setLoadOnStartup(1);
 		registration.addMapping(getServletMappings());
 		registration.setAsyncSupported(isAsyncSupported());
 
+		// 添加servlet的过滤器
 		Filter[] filters = getServletFilters();
 		if (!ObjectUtils.isEmpty(filters)) {
 			for (Filter filter : filters) {
@@ -102,6 +109,7 @@ public abstract class AbstractDispatcherServletInitializer extends AbstractConte
 			}
 		}
 
+		// 自定义注册钩子
 		customizeRegistration(registration);
 	}
 
