@@ -139,6 +139,8 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 	}
 
 	/**
+	 * 在父类`GenericServlet`中定义的抽象init方法，已经是servlet的API规范。
+	 *
 	 * Map config parameters onto bean properties of this servlet, and
 	 * invoke subclass initialization.
 	 * @throws ServletException if bean properties are invalid (or required
@@ -169,6 +171,7 @@ public abstract class HttpServletBean extends HttpServlet implements Environment
 		}
 
 		// Let subclasses do whatever initialization they like.
+		// 子类实现servlet如何初始化
 		initServletBean();
 
 		if (logger.isTraceEnabled()) {

@@ -23,6 +23,10 @@ import org.springframework.lang.Nullable;
 import org.springframework.web.method.HandlerMethod;
 
 /**
+ * 工作流模式的、允许自定义的处理器执行链接口。
+ * 可以在应用中为确定的处理器注册任意数量的拦截器。
+ * 好处：增加任意前置的处理行为却不需要修改处理器本身实现。
+ *
  * Workflow interface that allows for customized handler execution chains.
  * Applications can register any number of existing or custom interceptors
  * for certain groups of handlers, to add common preprocessing behavior
@@ -76,10 +80,16 @@ import org.springframework.web.method.HandlerMethod;
 public interface HandlerInterceptor {
 
 	/**
+	 * 处理器执行前的拦截，在handlerMapping决定一个合适的处理器、但在处理器适配器调用之前执行。
+	 *
 	 * Intercept the execution of a handler. Called after HandlerMapping determined
 	 * an appropriate handler object, but before HandlerAdapter invokes the handler.
 	 * <p>DispatcherServlet processes a handler in an execution chain, consisting
 	 * of any number of interceptors, with the handler itself at the end.
+	 *
+	 * 有了这个方法，任何一个拦截器可以决定终止执行链，比如发送一个HTTP错误或者自定义输出一个Response。
+	 * 如果返回true，则处理链会往下继续调用下个处理链；如果返回false，则DispatcherServlet认为处理器已经自己定义了本次请求的响应方式!!!
+	 *
 	 * With this method, each interceptor can decide to abort the execution chain,
 	 * typically sending a HTTP error or writing a custom response.
 	 * <p><strong>Note:</strong> special considerations apply for asynchronous
@@ -101,6 +111,10 @@ public interface HandlerInterceptor {
 	}
 
 	/**
+	 * 拦截处理器执行的后置方法，在处理器适配器已经调用处理器之后、但在`DispatcherServlet`返回view视图页面之前调用!!!
+	 *
+	 * 特殊用法：可以通过`ModelAndView`形参额外暴露模型参数到视图上!!!
+	 *
 	 * Intercept the execution of a handler. Called after HandlerAdapter actually
 	 * invoked the handler, but before the DispatcherServlet renders the view.
 	 * Can expose additional model objects to the view via the given ModelAndView.
@@ -125,6 +139,9 @@ public interface HandlerInterceptor {
 	}
 
 	/**
+	 * 一次请求处理完成的钩子，在视图渲染完成后被调用。
+	 * 方便外来请求结束时、做一些合适资源的释放处理。
+	 *
 	 * Callback after completion of request processing, that is, after rendering
 	 * the view. Will be called on any outcome of handler execution, thus allows
 	 * for proper resource cleanup.

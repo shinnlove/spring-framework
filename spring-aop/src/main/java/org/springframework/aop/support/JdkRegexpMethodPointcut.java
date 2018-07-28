@@ -21,6 +21,8 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 /**
+ * 基于Java正则包的正则表达式。
+ *
  * Regular expression pointcut based on the {@code java.util.regex} package.
  * Supports the following JavaBean properties:
  * <ul>
@@ -68,6 +70,7 @@ public class JdkRegexpMethodPointcut extends AbstractRegexpMethodPointcut {
 	}
 
 	/**
+	 * 正则数组中取出索引目标的正则、测试是否匹配给定的字符串。
 	 * Returns {@code true} if the {@link Pattern} at index {@code patternIndex}
 	 * matches the supplied candidate {@code String}.
 	 */

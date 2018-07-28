@@ -35,6 +35,8 @@ import org.springframework.util.ClassUtils;
 import org.springframework.web.bind.annotation.ResponseStatus;
 
 /**
+ * 为一个处理器方法包装信息的类，包含了对方法参数、返回值和注解便利的访问方法。
+ *
  * Encapsulates information about a handler method consisting of a
  * {@linkplain #getMethod() method} and a {@linkplain #getBean() bean}.
  * Provides convenient access to method parameters, the method return value,
@@ -56,17 +58,23 @@ public class HandlerMethod {
 	/** Logger that is available to subclasses. */
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	/** 某个处理器，通常是Controller */
 	private final Object bean;
 
+	/** 当前spring mvc所处的bean工厂 */
 	@Nullable
 	private final BeanFactory beanFactory;
 
+	/** 处理器的类字面变量 */
 	private final Class<?> beanType;
 
+	/** 处理器的方法 */
 	private final Method method;
 
+	/** 这个方法的桥接方法 */
 	private final Method bridgedMethod;
 
+	/** 方法参数数组 */
 	private final MethodParameter[] parameters;
 
 	@Nullable
@@ -104,7 +112,9 @@ public class HandlerMethod {
 		this.bean = bean;
 		this.beanFactory = null;
 		this.beanType = ClassUtils.getUserClass(bean);
+		// 反射找出给定方法名和形参类型的函数
 		this.method = bean.getClass().getMethod(methodName, parameterTypes);
+		// 反射找到这个方法对应的桥接方法(@See https://www.zhihu.com/question/54895701)
 		this.bridgedMethod = BridgeMethodResolver.findBridgedMethod(this.method);
 		this.parameters = initMethodParameters();
 		evaluateResponseStatus();
@@ -165,7 +175,11 @@ public class HandlerMethod {
 		this.resolvedFromHandlerMethod = handlerMethod;
 	}
 
-
+	/**
+	 * 初始化方法参数。
+	 *
+	 * @return
+	 */
 	private MethodParameter[] initMethodParameters() {
 		int count = this.bridgedMethod.getParameterCount();
 		MethodParameter[] result = new MethodParameter[count];
@@ -177,6 +191,9 @@ public class HandlerMethod {
 		return result;
 	}
 
+	/**
+	 * 评估返回状态。
+	 */
 	private void evaluateResponseStatus() {
 		ResponseStatus annotation = getMethodAnnotation(ResponseStatus.class);
 		if (annotation == null) {
@@ -349,10 +366,17 @@ public class HandlerMethod {
 
 
 	/**
+	 * 处理器方法参数包装。
+	 *
 	 * A MethodParameter with HandlerMethod-specific behavior.
 	 */
 	protected class HandlerMethodParameter extends SynthesizingMethodParameter {
 
+		/**
+		 * 为桥接方法打上索引标记。
+		 *
+		 * @param index
+		 */
 		public HandlerMethodParameter(int index) {
 			super(HandlerMethod.this.bridgedMethod, index);
 		}
@@ -366,6 +390,13 @@ public class HandlerMethod {
 			return HandlerMethod.this.getBeanType();
 		}
 
+		/**
+		 * 在当前包装上检索给定注解。
+		 *
+		 * @param annotationType the annotation type to look for
+		 * @param <T>
+		 * @return
+		 */
 		@Override
 		public <T extends Annotation> T getMethodAnnotation(Class<T> annotationType) {
 			return HandlerMethod.this.getMethodAnnotation(annotationType);
@@ -384,10 +415,13 @@ public class HandlerMethod {
 
 
 	/**
+	 * 附带了返回值的方法参数类。
+	 *
 	 * A MethodParameter for a HandlerMethod return type based on an actual return value.
 	 */
 	private class ReturnValueMethodParameter extends HandlerMethodParameter {
 
+		/** 本方法参数调用后的返回值 */
 		@Nullable
 		private final Object returnValue;
 

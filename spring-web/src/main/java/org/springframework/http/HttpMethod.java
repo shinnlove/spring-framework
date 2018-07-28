@@ -34,7 +34,7 @@ public enum HttpMethod {
 
 	GET, HEAD, POST, PUT, PATCH, DELETE, OPTIONS, TRACE;
 
-
+	/** HTTP类型枚举中持有hashMap：枚举名name->枚举映射(HttpMethod) */
 	private static final Map<String, HttpMethod> mappings = new HashMap<>(8);
 
 	static {

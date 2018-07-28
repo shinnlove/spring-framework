@@ -44,14 +44,18 @@ import org.springframework.web.servlet.ModelAndView;
  */
 public final class MappedInterceptor implements HandlerInterceptor {
 
+	/** 拦截包含路径 */
 	@Nullable
 	private final String[] includePatterns;
 
+	/** 拦截放过路径 */
 	@Nullable
 	private final String[] excludePatterns;
 
+	/** 具体的拦截器 */
 	private final HandlerInterceptor interceptor;
 
+	/** 路径规则匹配器 */
 	@Nullable
 	private PathMatcher pathMatcher;
 

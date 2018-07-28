@@ -22,6 +22,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
+ * 数据结构：代表在解析过程中的一个import资源已经被处理了。
+ *
  * Representation of an import that has been processed during the parsing process.
  *
  * @author Juergen Hoeller

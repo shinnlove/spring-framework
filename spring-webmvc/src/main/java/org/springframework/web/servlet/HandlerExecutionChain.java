@@ -29,6 +29,7 @@ import org.springframework.util.CollectionUtils;
 import org.springframework.util.ObjectUtils;
 
 /**
+ * 处理器执行链，包含了一个处理器对象和任意多个处理器拦截器。
  * Handler execution chain, consisting of handler object and any handler interceptors.
  * Returned by HandlerMapping's {@link HandlerMapping#getHandler} method.
  *
@@ -40,18 +41,24 @@ public class HandlerExecutionChain {
 
 	private static final Log logger = LogFactory.getLog(HandlerExecutionChain.class);
 
+	/** 一般是HandlerMethod对象 */
 	private final Object handler;
 
+	/** 可空的、真正执行的拦截器数组 */
 	@Nullable
 	private HandlerInterceptor[] interceptors;
 
+	/** 合并用的拦截器List */
 	@Nullable
 	private List<HandlerInterceptor> interceptorList;
 
+	/** 当前执行到的拦截器索引(如果执行成功，往下递推1) */
 	private int interceptorIndex = -1;
 
 
 	/**
+	 * 初始化包装一个处理器成为处理器执行链(首次调用)。
+	 *
 	 * Create a new HandlerExecutionChain.
 	 * @param handler the handler object to execute
 	 */
@@ -60,6 +67,8 @@ public class HandlerExecutionChain {
 	}
 
 	/**
+	 * 为处理器包装若干个拦截链、或者为已经是处理链的handler增加拦截链。
+	 *
 	 * Create a new HandlerExecutionChain.
 	 * @param handler the handler object to execute
 	 * @param interceptors the array of interceptors to apply
@@ -67,13 +76,17 @@ public class HandlerExecutionChain {
 	 */
 	public HandlerExecutionChain(Object handler, @Nullable HandlerInterceptor... interceptors) {
 		if (handler instanceof HandlerExecutionChain) {
+			// 处理器已经是处理器执行链
 			HandlerExecutionChain originalChain = (HandlerExecutionChain) handler;
 			this.handler = originalChain.getHandler();
+
+			// 将原来的拦截器数组合并到arrayList中、再合并形参传入的新拦截器
 			this.interceptorList = new ArrayList<>();
 			CollectionUtils.mergeArrayIntoCollection(originalChain.getInterceptors(), this.interceptorList);
 			CollectionUtils.mergeArrayIntoCollection(interceptors, this.interceptorList);
 		}
 		else {
+			// 处理器首次包装成处理器执行链
 			this.handler = handler;
 			this.interceptors = interceptors;
 		}
@@ -131,12 +144,15 @@ public class HandlerExecutionChain {
 	boolean applyPreHandle(HttpServletRequest request, HttpServletResponse response) throws Exception {
 		HandlerInterceptor[] interceptors = getInterceptors();
 		if (!ObjectUtils.isEmpty(interceptors)) {
+			// 依次执行拦截链
 			for (int i = 0; i < interceptors.length; i++) {
 				HandlerInterceptor interceptor = interceptors[i];
 				if (!interceptor.preHandle(request, response, this.handler)) {
+					// 如果预处理中打断了，则触发完成
 					triggerAfterCompletion(request, response, null);
 					return false;
 				}
+				// 重要：设置当前执行到的拦截器的索引(用于倒退执行完成)
 				this.interceptorIndex = i;
 			}
 		}
@@ -144,6 +160,10 @@ public class HandlerExecutionChain {
 	}
 
 	/**
+	 * 处理器适配器执行完处理、渲染视图前执行。
+	 *
+	 * 执行顺序：挨个从后往前执行每个拦截器的postHandle方法!!!
+	 *
 	 * Apply postHandle methods of registered interceptors.
 	 */
 	void applyPostHandle(HttpServletRequest request, HttpServletResponse response, @Nullable ModelAndView mv)
@@ -168,6 +188,7 @@ public class HandlerExecutionChain {
 
 		HandlerInterceptor[] interceptors = getInterceptors();
 		if (!ObjectUtils.isEmpty(interceptors)) {
+			// 挺有意思：从当前位置拦截器索引位置开始往后倒退执行完成步骤
 			for (int i = this.interceptorIndex; i >= 0; i--) {
 				HandlerInterceptor interceptor = interceptors[i];
 				try {

@@ -130,10 +130,12 @@ public class InvocableHandlerMethod extends HandlerMethod {
 	public Object invokeForRequest(NativeWebRequest request, @Nullable ModelAndViewContainer mavContainer,
 			Object... providedArgs) throws Exception {
 
+		// 获取目标handler、目标方法真正的形参入参值
 		Object[] args = getMethodArgumentValues(request, mavContainer, providedArgs);
 		if (logger.isTraceEnabled()) {
 			logger.trace("Arguments: " + Arrays.toString(args));
 		}
+		// 使用反射传入参数调用处理器方法获得返回值!!!
 		return doInvoke(args);
 	}
 
@@ -199,11 +201,15 @@ public class InvocableHandlerMethod extends HandlerMethod {
 
 
 	/**
+	 * 使用给定形参调用处理器的方法。
+	 *
 	 * Invoke the handler method with the given argument values.
 	 */
 	protected Object doInvoke(Object... args) throws Exception {
 		ReflectionUtils.makeAccessible(getBridgedMethod());
 		try {
+			// 通过反射，调用这个bean(某个controller)的目标方法(BridgedMethod)、传入解析出的入参(args)，真正进入了Controller的@RequestMapping中
+			// 通过调用处理器中的桥接方法(如果持有泛型)
 			return getBridgedMethod().invoke(getBean(), args);
 		}
 		catch (IllegalArgumentException ex) {
