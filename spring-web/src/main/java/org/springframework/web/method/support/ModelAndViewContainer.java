@@ -54,8 +54,10 @@ public class ModelAndViewContainer {
 	@Nullable
 	private Object view;
 
+	/** 默认的模型数据结构 */
 	private final ModelMap defaultModel = new BindingAwareModelMap();
 
+	/** 跳转类型的模型视图 */
 	@Nullable
 	private ModelMap redirectModel;
 

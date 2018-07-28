@@ -25,6 +25,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
+ * ModelMap是一个`LinkedHashMap`数据结构，存放key->Object类型数据映射。
+ *
  * Implementation of {@link java.util.Map} for use when building model data for use
  * with UI tools. Supports chained calls and generation of model attribute names.
  *

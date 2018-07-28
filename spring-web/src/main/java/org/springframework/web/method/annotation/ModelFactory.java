@@ -139,6 +139,7 @@ public final class ModelFactory {
 				continue;
 			}
 
+			// 反射初始化调用有`@ModelAttribute`注解的方法
 			Object returnValue = modelMethod.invokeForRequest(request, container);
 			if (!modelMethod.isVoid()){
 				String returnValueName = getNameForReturnValue(returnValue, modelMethod.getReturnType());
