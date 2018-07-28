@@ -72,6 +72,10 @@ public class XmlWebApplicationContext extends AbstractRefreshableWebApplicationC
 
 
 	/**
+	 * `XMLWebApplicationContext`是通过`XmlBeanDefinitionReader`来读取bean的定义的。
+	 *
+	 * 本方法是被父类`AbstractRefreshableApplicationContext`中的`refreshBeanFactory`方法调用的，是个到本类才实现的抽象方法。
+	 *
 	 * Loads the bean definitions via an XmlBeanDefinitionReader.
 	 * @see org.springframework.beans.factory.xml.XmlBeanDefinitionReader
 	 * @see #initBeanDefinitionReader
@@ -91,6 +95,7 @@ public class XmlWebApplicationContext extends AbstractRefreshableWebApplicationC
 		// Allow a subclass to provide custom initialization of the reader,
 		// then proceed with actually loading the bean definitions.
 		initBeanDefinitionReader(beanDefinitionReader);
+		// 取出configLocations数组，使用reader循环加载每一个(然后所有的xml中bean配置都会被加载)
 		loadBeanDefinitions(beanDefinitionReader);
 	}
 
