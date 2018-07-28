@@ -24,6 +24,8 @@ import org.springframework.ui.ModelMap;
 import org.springframework.util.CollectionUtils;
 
 /**
+ * 在web MVC框架中持有模型和视图，代表一个处理器返回的模型和视图，（此类仅仅为了将model和view包装起来让控制器可以只返回一个value）。
+ *
  * Holder for both Model and View in the web MVC framework.
  * Note that these are entirely distinct. This class merely holds
  * both to make it possible for a controller to return both model
@@ -54,7 +56,7 @@ public class ModelAndView {
 	@Nullable
 	private ModelMap model;
 
-	/** Optional HTTP status for the response. */
+	/** Optional HTTP status for the response. 响应可选的HTTP状态 */
 	@Nullable
 	private HttpStatus status;
 

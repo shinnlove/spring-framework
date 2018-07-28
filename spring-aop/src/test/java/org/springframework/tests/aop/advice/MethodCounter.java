@@ -35,6 +35,7 @@ public class MethodCounter implements Serializable {
 	private int allCount;
 
 	protected void count(Method m) {
+		// getName()根据方法名进行统计
 		count(m.getName());
 	}
 
