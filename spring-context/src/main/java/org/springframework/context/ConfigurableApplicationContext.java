@@ -185,6 +185,8 @@ public interface ConfigurableApplicationContext extends ApplicationContext, Life
 	void close();
 
 	/**
+	 * 一个至少被refresh过一次、并且没有被关闭的应用上下文就称为active的上下文。
+	 *
 	 * Determine whether this application context is active, that is,
 	 * whether it has been refreshed at least once and has not been closed yet.
 	 * @return whether the context is still active

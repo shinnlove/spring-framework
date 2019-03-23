@@ -121,6 +121,7 @@ public abstract class BeanUtils {
 		try {
 			Constructor<T> ctor = (KotlinDetector.isKotlinType(clazz) ?
 					KotlinDelegate.getPrimaryConstructor(clazz) : clazz.getDeclaredConstructor());
+			// (JVM类的类型可以是很多种，如Groovy...)是Kotlin类型的类、则用主构造器，是标准java类就用声明的构造器。
 			return instantiateClass(ctor);
 		}
 		catch (NoSuchMethodException ex) {
@@ -151,6 +152,11 @@ public abstract class BeanUtils {
 	}
 
 	/**
+	 * 通过一个类的构造器便捷构造出一个类实例的方法。
+	 * 注意本方法会反射让构造器可见，即便给出不是public的构造器。
+	 *
+	 * 而标准Java类就是使用构造器的`newInstance()`方法来实例化，其中args是变参、都是Object类型。
+	 *
 	 * Convenience method to instantiate a class using the given constructor.
 	 * <p>Note that this method tries to set the constructor accessible if given a
 	 * non-accessible (that is, non-public) constructor, and supports Kotlin classes
