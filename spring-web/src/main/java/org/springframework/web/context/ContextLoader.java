@@ -281,7 +281,7 @@ public class ContextLoader {
 			// it is available on ServletContext shutdown.
 			// 在本地实例的变量中缓存上下文环境，保证在servlet上下文关闭的时候是有效的
 			if (this.context == null) {
-				// 首次创建web应用上下文环境
+				// 首次创建web应用上下文环境(spring会使用默认的WebApplicationContext、也就是`org.springframework.web.context.support.XmlWebApplicationContext`)
 				this.context = createWebApplicationContext(servletContext);
 			}
 			if (this.context instanceof ConfigurableWebApplicationContext) {
