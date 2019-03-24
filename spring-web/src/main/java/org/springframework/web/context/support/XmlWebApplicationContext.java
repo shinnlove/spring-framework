@@ -31,9 +31,13 @@ import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
  * {@link org.springframework.context.support.GenericXmlApplicationContext}
  * for a web environment.
  *
+ * 配置文件默认从`/WEB-INF/applicationContext.xml`中加载根应用上下文。
+ *
  * <p>By default, the configuration will be taken from "/WEB-INF/applicationContext.xml"
  * for the root context, and "/WEB-INF/test-servlet.xml" for a context with the namespace
  * "test-servlet" (like for a DispatcherServlet instance with the servlet-name "test").
+ *
+ * 上下文配置路径默认可以使用`contextConfigLocation`配置更改。
  *
  * <p>The config location defaults can be overridden via the "contextConfigLocation"
  * context-param of {@link org.springframework.web.context.ContextLoader} and servlet

@@ -29,6 +29,8 @@ import javax.servlet.ServletContextListener;
  * 由`ContextLoaderListener`启动的web应用是根上下文、也就是整个spring容器，定义了一堆服务bean的容器。
  * springMvc存放控制器和相关请求映射的上下文，以spring容器作为父上下文。
  *
+ * 因为实现了{@link ServletContextListener}接口，所以servlet容器Context的任何变化都会被监听调用，如contextInitialized、contextDestroyed方法。
+ *
  * Bootstrap listener to start up and shut down Spring's root {@link WebApplicationContext}.
  * Simply delegates to {@link ContextLoader} as well as to {@link ContextCleanupListener}.
  *

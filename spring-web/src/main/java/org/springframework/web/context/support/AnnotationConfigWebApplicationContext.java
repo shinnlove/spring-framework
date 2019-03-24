@@ -193,6 +193,7 @@ public class AnnotationConfigWebApplicationContext extends AbstractRefreshableWe
 	@Override
 	protected void loadBeanDefinitions(DefaultListableBeanFactory beanFactory) {
 		AnnotatedBeanDefinitionReader reader = getAnnotatedBeanDefinitionReader(beanFactory);
+		// 如果使用注解方式，则使用类路径下beanDefinition定义扫描器来发现打了注解的配置类
 		ClassPathBeanDefinitionScanner scanner = getClassPathBeanDefinitionScanner(beanFactory);
 
 		BeanNameGenerator beanNameGenerator = getBeanNameGenerator();
@@ -202,6 +203,7 @@ public class AnnotationConfigWebApplicationContext extends AbstractRefreshableWe
 			beanFactory.registerSingleton(AnnotationConfigUtils.CONFIGURATION_BEAN_NAME_GENERATOR, beanNameGenerator);
 		}
 
+		// beanScope解析器
 		ScopeMetadataResolver scopeMetadataResolver = getScopeMetadataResolver();
 		if (scopeMetadataResolver != null) {
 			reader.setScopeMetadataResolver(scopeMetadataResolver);
@@ -239,6 +241,7 @@ public class AnnotationConfigWebApplicationContext extends AbstractRefreshableWe
 						logger.debug("Could not load class for config location [" + configLocation +
 								"] - trying package scan. " + ex);
 					}
+					// 将配置位置所谓basePackage来扫描bean定义
 					int count = scanner.scan(configLocation);
 					if (logger.isInfoEnabled()) {
 						if (count == 0) {

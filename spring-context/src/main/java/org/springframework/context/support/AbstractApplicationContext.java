@@ -541,7 +541,15 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 			prepareRefresh();
 
 			// Tell the subclass to refresh the internal bean factory.
-			// 告诉子类刷新内置的bean工厂(在子类中启动refreshBeanFactory的地方)，让子类先刷新？
+			/**
+			 * 让继承自`AbstractApplicationContext`类的具体导出类刷新BeanFactory(如{@link org.springframework.web.context.support.XmlWebApplicationContext}刷新)：
+			 * 就会去使用`loadBeanDefinitions`方法加载xml中定义的bean。
+			 *
+			 * 为什么这个方法叫`obtainFreshBeanFactory`？
+			 * refresh一个BeanFactory，就是加载它的配置，如BeanDefinition。这个配置是可以重复加载的，所以称为refreshable。
+			 * 第一次创建BeanFactory、或者每次销毁原来的BeanFactory、重新加载完配置，就是一个全新的BeanFactory。
+			 * 此时正应该准备各种工厂钩子、实例化其中的各种bean对象，所以称之为fresh的BeanFactory。
+			 */
 			ConfigurableListableBeanFactory beanFactory = obtainFreshBeanFactory();
 
 			// Prepare the bean factory for use in this context.
@@ -657,7 +665,10 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	 * @see #getBeanFactory()
 	 */
 	protected ConfigurableListableBeanFactory obtainFreshBeanFactory() {
+		// 刷新BeanFactory工厂，在这里加载xml配置文件、扫描BeanDefinition定义
 		refreshBeanFactory();
+
+		// 获取内部刷新的beanFactory
 		ConfigurableListableBeanFactory beanFactory = getBeanFactory();
 		if (logger.isDebugEnabled()) {
 			logger.debug("Bean factory for " + getDisplayName() + ": " + beanFactory);
@@ -1391,6 +1402,9 @@ public abstract class AbstractApplicationContext extends DefaultResourceLoader
 	//---------------------------------------------------------------------
 
 	/**
+	 * 为了执行实际配置加载、必须被子类实现的方法。
+	 * 这个方法必须在初始化工作之前被refresh()方法调用，以完成必要的配置加载（如：beanDefinition的加载）。
+	 *
 	 * Subclasses must implement this method to perform the actual configuration load.
 	 * The method is invoked by {@link #refresh()} before any other initialization work.
 	 * <p>A subclass will either create a new bean factory and hold a reference to it,

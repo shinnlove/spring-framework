@@ -64,9 +64,11 @@ import org.springframework.lang.Nullable;
  */
 public abstract class AbstractRefreshableApplicationContext extends AbstractApplicationContext {
 
+	/** 是否允许bean定义被重写 */
 	@Nullable
 	private Boolean allowBeanDefinitionOverriding;
 
+	/** 是否允许循环引用 */
 	@Nullable
 	private Boolean allowCircularReferences;
 
@@ -74,7 +76,7 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	@Nullable
 	private DefaultListableBeanFactory beanFactory;
 
-	/** Synchronization monitor for the internal BeanFactory. */
+	/** Synchronization monitor for the internal BeanFactory. 创建抽象类内部可刷新的应用容器的同步管程对象 */
 	private final Object beanFactoryMonitor = new Object();
 
 
@@ -118,6 +120,8 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	/**
 	 * 这个实现对上下文的bean工厂做了一个实际的刷新动作，如果原先已经存在一个bean工厂则关闭销毁。
 	 *
+	 * 刷新，就是为了销毁原来的bean工厂，重新新建一个，扫描配置文件，生成新的bean工厂。
+	 *
 	 * This implementation performs an actual refresh of this context's underlying
 	 * bean factory, shutting down the previous bean factory (if any) and
 	 * initializing a fresh bean factory for the next phase of the context's lifecycle.
@@ -129,6 +133,7 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 			destroyBeans();
 			closeBeanFactory();
 		}
+
 		try {
 			// 使用`DefaultListableBeanFactory`创建IOC容器
 			DefaultListableBeanFactory beanFactory = createBeanFactory();
@@ -136,7 +141,10 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 			// 自定义是否允许bean定义重写、允许循环引用
 			customizeBeanFactory(beanFactory);
 
-			// 启动对bean定义的载入，是个抽象方法，在其子类`AbstractXmlApplicationContext`中初始化了读取器`XmlBeanDefinitionReader`
+			/**
+			 * 启动对bean定义的载入，是个抽象方法，在其子类`AbstractXmlApplicationContext`中初始化了读取器`XmlBeanDefinitionReader`
+			 * 如果默认使用{@link org.springframework.web.context.support.XmlWebApplicationContext}，则会调用到其中的加载bean配置
+			 */
 			loadBeanDefinitions(beanFactory);
 			synchronized (this.beanFactoryMonitor) {
 				this.beanFactory = beanFactory;
