@@ -67,7 +67,7 @@ public class RootBeanDefinition extends AbstractBeanDefinition {
 	@Nullable
 	volatile ResolvableType targetType;
 
-	/** Package-visible field for caching the determined Class of a given bean definition. */
+	/** Package-visible field for caching the determined Class of a given bean definition. 包可见的属性，缓存给定的目标bean决定使用哪个类 */
 	@Nullable
 	volatile Class<?> resolvedTargetType;
 

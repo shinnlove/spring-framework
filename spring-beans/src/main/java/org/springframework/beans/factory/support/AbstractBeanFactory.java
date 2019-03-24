@@ -202,6 +202,8 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 	/**
 	 * 按照bean的id来寻找bean。
+	 *
+	 * 这种case没有指定类型、没有具体参数、也不用检测类型。
 	 */
 	@Override
 	public Object getBean(String name) throws BeansException {
@@ -288,6 +290,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			// `AbstractBeanFactory`是可以持有`BeanFactory`类型的父级bean工厂容器的
 			BeanFactory parentBeanFactory = getParentBeanFactory();
 
+			// 如果有父级beanFactory
 			if (parentBeanFactory != null && !containsBeanDefinition(beanName)) {
 				// Not found -> check parent.
 				String nameToLookup = originalBeanName(name);
@@ -327,35 +330,46 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 				/**
 				 * ==============Spring确保bean的依赖不会循环Begin============
+				 *
 				 * Spring的每个Bean的BeanDefinition在被`XmlBeanDefinitionReader`扫描的时候，
 				 * 如果有依赖都会存放在`String[] dependsOn`中，依赖可以空。
 				 * 在做`doGetBean`的时候，spring会为目标bean进行依赖初始化(依赖注入)。
 				 *
 				 * Spring做了两个最重要的机制：
-				 * 1、维持一份正向索引：目标bean=>被依赖bean集合；
-				 * 2、每次都先检查当前目标bean和被依赖的bean是否有依赖关系，再去建立这种依赖关系（这样做最大的好处是如果已有依赖、说明存在循环依赖）；
-				 * 3、当A=>B、B=>C、C=>D、而D=>A时候：
-				 * A会触发对B的递归获取(被依赖的bean先实例化)、B触发对C、C触发对D、D触发对A、最后A又触发对B......
-				 * 结果发现A对B的依赖关系已经存在，如果没有循环依赖，这份关系应该不存在!从而的得知循环依赖。
+				 * 1、维持一份正向索引：目标bean=>被依赖bean集合；维持一份反向索引：被依赖bean=>需求者bean集合。
+				 * 2、每次都先检查当前目标bean和被依赖的bean是否有依赖关系，再去建立这种依赖关系；
+				 * 3、循环依赖检测见 {@link DefaultSingletonBeanRegistry#isDependent(java.lang.String, java.lang.String, java.util.Set)}
+				 * 这个方法里明确用反向依赖映射去探测当前bean和被依赖depBean之间的循环依赖关系。
 				 *
-				 * 所需数据结构：目标bean => Set<>(被依赖的beanId);
-				 * 检索依赖的时候，会不断追溯已经存在的子级依赖关系，如果子级依赖关系中也有映射到被依赖的bean，则代表还是循环依赖了。
+				 * Q：如果在spring bean容器中有循环依赖，spring能否启动？
+				 * A：Spring容器在`preInstantiateSingletons`方法中对容器里的所有单例bean进行初始化，使用的是不加try...catch...的for循环。
+				 * 每个单例bean在初始化时，又会递归调用到GetBean方法。
+				 * 在不断初始化这些单例bean的过程中，正向依赖和反向依赖映射被不断扩充，并且是线程同步的：
+				 * 如果在整个容器中，存在X和Y通过某种路径相互引用，则无论是X还是Y先初始化，剩下的一个必然不能初始化。
+				 * 此时就会报循环引用错，错误就会渗透到`preInstantiateSingletons`的for循环外，就会被最外层web应用自刷新refresh()函数捕捉到，进入catch块，web应用启动失败。
+				 *
+				 * 容器启动口诀：容器上锁才刷新、工厂钩子后单例、依赖需要递归拿、正反映射验循环、可见集合递归传、循环依赖就报错。
+				 *
 				 */
 
-				// 非常重要：确保当前要初始化的bean所需的依赖bean都已经被初始化!!!
-				// 在bean的定义dependsOn数组中存放了所有依赖bean的Id
+				// 非常重要：初始化一个bean，需要确保它所依赖bean都已经被初始化!!!这相当于又轮回去执行从BeanFactory初始化被依赖bean的过程。
+				// 在XmlBeanDefinitionReader扫描bean定义时，dependsOn数组中已存放了所有依赖bean的Id
 				String[] dependsOn = mbd.getDependsOn();
 				if (dependsOn != null) {
-					// 循环遍历每个依赖
+					// 循环检测每个被依赖bean是否又反向依赖当前bean
 					for (String dep : dependsOn) {
-						// 非常重要：每一个依赖关系对于当前bean应该都是不在Map映射中的，有就说明有循环依赖，需要报错!!!
+						// 非常重要：每一个依赖关系对于当前bean应该都是不在反向依赖Map映射中的，有就说明有循环依赖，需要报错!!!
+						// 反向检测下beanName有没有被dep所依赖，如果有就是循环依赖(这个`isDependent`有点歧义，其实应该是`reverseDependent`定义比较好)
 						if (isDependent(beanName, dep)) {
 							throw new BeanCreationException(mbd.getResourceDescription(), beanName,
 									"Circular depends-on relationship between '" + beanName + "' and '" + dep + "'");
 						}
-						// 非常重要：Step1-为当前bean注册依赖的bean(写入Map数据结构)
+
+						// 非常重要：Step1-为当前bean注册依赖的bean(写入Map数据结构、正反都写一份)
 						// 将本来不存在的依赖关系注册好，也为下一个依赖检测循环做准备
+						// !!! 看清楚，被依赖的在前面，以来的在后边
 						registerDependentBean(dep, beanName);
+
 						try {
 							// 非常重要：Step2-递归获取依赖的bean(触发被依赖的bean进行依赖注入!!!)
 							getBean(dep);
@@ -1310,6 +1324,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 			throws BeanDefinitionStoreException {
 
 		synchronized (this.mergedBeanDefinitions) {
+			// 同步合并bean定义的ConcurrentHashMap
 			RootBeanDefinition mbd = null;
 
 			// Check with full lock now in order to enforce the same merged instance.

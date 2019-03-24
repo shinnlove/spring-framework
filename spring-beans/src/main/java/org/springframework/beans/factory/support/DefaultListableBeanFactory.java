@@ -122,6 +122,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	private static Class<?> javaxInjectProviderClass;
 
 	static {
+		// Q：`javax.inject.Provider`是个什么功能的类？
 		try {
 			javaxInjectProviderClass =
 					ClassUtils.forName("javax.inject.Provider", DefaultListableBeanFactory.class.getClassLoader());
@@ -141,7 +142,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	@Nullable
 	private String serializationId;
 
-	/** Whether to allow re-registration of a different definition with the same name. */
+	/** Whether to allow re-registration of a different definition with the same name. 是否允许重新注册一个已经存在的beanId(这一块是动态注册？) */
 	private boolean allowBeanDefinitionOverriding = true;
 
 	/** Whether to allow eager class loading even for lazy-init beans. */
@@ -354,6 +355,13 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	// Implementation of ListableBeanFactory interface
 	//---------------------------------------------------------------------
 
+	/**
+	 * 一个工厂内是否有某个bean的定义，是在`DefaultListableBeanFactory`中定义的Map数据结构中找。
+	 * 可以理解为`AbstractBeanFactory`是具体实现工厂行为的抽象类，而`DefaultListableBeanFactory`是持有具体bean定义的实现类。
+	 *
+	 * @param beanName the name of the bean to look for
+	 * @return
+	 */
 	@Override
 	public boolean containsBeanDefinition(String beanName) {
 		Assert.notNull(beanName, "Bean name must not be null");
@@ -725,6 +733,11 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 		return (this.configurationFrozen || super.isBeanEligibleForMetadataCaching(beanName));
 	}
 
+	/**
+	 * 预先实例化容器中所有单例bean。
+	 *
+	 * @throws BeansException
+	 */
 	@Override
 	public void preInstantiateSingletons() throws BeansException {
 		if (logger.isDebugEnabled()) {
@@ -742,6 +755,7 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 				if (isFactoryBean(beanName)) {
 					Object bean = getBean(FACTORY_BEAN_PREFIX + beanName);
 					if (bean instanceof FactoryBean) {
+						// 工厂bean
 						final FactoryBean<?> factory = (FactoryBean<?>) bean;
 						boolean isEagerInit;
 						if (System.getSecurityManager() != null && factory instanceof SmartFactoryBean) {
@@ -754,11 +768,15 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 									((SmartFactoryBean<?>) factory).isEagerInit());
 						}
 						if (isEagerInit) {
+							// 工厂bean需要急切初始化则初始化，否则留到后边再初始化
+							// Q：非急切初始化时，何时初始化工厂类？
 							getBean(beanName);
 						}
 					}
 				}
 				else {
+					// 不是工厂bean直接getBean触发实例化
+					// getBean方法就是`AbstractBeanFactory`中定义的一些从beanFactory中获取bean的方法
 					getBean(beanName);
 				}
 			}

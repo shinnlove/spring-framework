@@ -70,7 +70,7 @@ import org.springframework.util.StringUtils;
  */
 public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements SingletonBeanRegistry {
 
-	/** Cache of singleton objects: bean name to bean instance. bean的id => bean实例的缓存 */
+	/** Cache of singleton objects: bean name to bean instance. 缓存单例对象，bean的id => bean实例 */
 	private final Map<String, Object> singletonObjects = new ConcurrentHashMap<>(256);
 
 	/** Cache of singleton factories: bean name to ObjectFactory. */
@@ -103,10 +103,10 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	/** Map between containing bean names: bean name to Set of bean names that the bean contains. */
 	private final Map<String, Set<String>> containedBeanMap = new ConcurrentHashMap<>(16);
 
-	/** Map between dependent bean names: bean name --> Set of dependent bean names. 正向依赖：某个beanId => 这个beanId依赖的所有beanId集合 */
+	/** Map between dependent bean names: bean name --> Set of dependent bean names. 反向依赖：某个beanId => 依赖这个beanId的所有需求者beanId集合 */
 	private final Map<String, Set<String>> dependentBeanMap = new ConcurrentHashMap<>(64);
 
-	/** Map between depending bean names: bean name --> Set of bean names for the bean's dependencies. 反向依赖：被依赖的bean=>哪些bean依赖了这个bean的集合 */
+	/** Map between depending bean names: bean name --> Set of bean names for the bean's dependencies. 正向依赖：需求beanId=>被依赖的bean集合，一个bean的所有依赖 */
 	private final Map<String, Set<String>> dependenciesForBeanMap = new ConcurrentHashMap<>(64);
 
 
@@ -389,7 +389,7 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	}
 
 	/**
-	 * 为给定的bean注册一个依赖的bean。
+	 * 为一个bean注册所有依赖它的需求者bean，并且注册需求者正向依赖这个bean。
 	 *
 	 * 本质：
 	 * 维持一份需求者beanId => 所有依赖的beanId集合(dependentBeanMap)；
@@ -397,8 +397,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 *
 	 * Register a dependent bean for the given bean,
 	 * to be destroyed before the given bean is destroyed.
-	 * @param beanName the name of the bean
-	 * @param dependentBeanName the name of the dependent bean
+	 * @param beanName the name of the bean							被依赖的bean
+	 * @param dependentBeanName the name of the dependent bean		依赖它的需求者bean
 	 */
 	public void registerDependentBean(String beanName, String dependentBeanName) {
 		// 快速检查依赖是否已经注册并存在(避免对Map不必要的同步)
@@ -409,6 +409,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 			// 创建一个依赖bean的`LinkedHashSet`数据结构
 			// 再生成这个bean的依赖key=>依赖bean集合
 			// 加入被依赖的bean的Id
+			// `computeIfAbsent`返回`canonicalName`作为key映射的Set集合引用
+			// A依赖C和D，则A是key，依赖集合中有C和D两个bean
 			Set<String> dependentBeans =
 					this.dependentBeanMap.computeIfAbsent(canonicalName, k -> new LinkedHashSet<>(8));
 			if (!dependentBeans.add(dependentBeanName)) {
@@ -420,6 +422,8 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		synchronized (this.dependenciesForBeanMap) {
 			// 将谁依赖的加入反向依赖Map映射中
 			// 第一次初始化，将所有依赖者放在`LinkedHashSet`中
+			// A依赖B，被依赖的beanId-B作为key，加入当前依赖它的A到集合中
+			// 下次处理依赖的时候，可能C也依赖B，那B还是作为key，把C加入集合中，依赖它的集合中就有了A和C!!
 			Set<String> dependenciesForBean =
 					this.dependenciesForBeanMap.computeIfAbsent(dependentBeanName, k -> new LinkedHashSet<>(8));
 			dependenciesForBean.add(canonicalName);
@@ -436,17 +440,37 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 	 * @since 4.0
 	 */
 	protected boolean isDependent(String beanName, String dependentBeanName) {
+		// 注意，找A依赖B了吗，先锁定正向依赖关系
 		synchronized (this.dependentBeanMap) {
 			return isDependent(beanName, dependentBeanName, null);
 		}
 	}
 
 	/**
-	 * 检测bean一个bean是否依赖于另一个bean。
+	 * 检测一个需求者bean对应的依赖bean是否反向依赖了这个需求者bean。
+	 *
+	 * 第一个形参是被检测的bean->A；第二个形参是被依赖的bean->B。
+	 *
+	 * A是否反向依赖B呢？——看A被谁依赖了->dependentBeanMap这个反向依赖映射。
+	 *
+	 * Step1：A的反向依赖中没有任何元素->A没有循环依赖B，因为A没有被任何bean依赖
+	 * Step2：A的反向依赖中有若干元素且包含B->循环依赖了
+	 * Step3：A的反向依赖中有若干元素但是不包含B——到底A和B循环依赖吗？不一定!!!
+	 * 	假设A被C和D依赖，那如果C或D只要有一个被B依赖，就算是A依赖了B、同时又B依赖A。
+	 * 	所以需要对C和D再进行一次检测，也要看C和D的被依赖映射，并且A会把可见bean引用集合传递下去。
+	 *
+	 * 	现在要对C进行检测了，A把自己放在`alreadySeen`的集合中。
+	 * 	若C的反向依赖映射中没有依赖元素、则C不被B依赖，A也消除因为C被B依赖的可能。
+	 * 	C的反向依赖映射中有需求者元素，且是B，则A也依赖B，产生循环依赖。
+	 *
+	 * 	D的检测同理。
+	 *
+	 * 	当反向依赖判断函数正在运行中，代表检测还在递归往下，如果已经依赖了，函数早就返回中断了。
+	 * 	那么每一次递归、必定检测一个bean，最终这些bean都被放在alreadySeen这个集合中。
 	 *
 	 * @param beanName				被检测的bean
 	 * @param dependentBeanName		被依赖的bean
-	 * @param alreadySeen
+	 * @param alreadySeen			一个集合，初始化调用时新建、而后每次都作为下一级递归引用传入，集合中元素不断增加
 	 * @return
 	 */
 	private boolean isDependent(String beanName, String dependentBeanName, @Nullable Set<String> alreadySeen) {
@@ -459,17 +483,17 @@ public class DefaultSingletonBeanRegistry extends SimpleAliasRegistry implements
 		String canonicalName = canonicalName(beanName);
 		Set<String> dependentBeans = this.dependentBeanMap.get(canonicalName);
 
-		// Case1：如果有没有依赖，返回false
+		// Case1：当前bean没有任何依赖，返回false
 		if (dependentBeans == null) {
 			return false;
 		}
 
-		// Case2：被检测的bean依赖中包含，返回true
+		// Case2：被检测的bean依赖中包含指定的名称，返回true
 		if (dependentBeans.contains(dependentBeanName)) {
 			return true;
 		}
 
-		// 循环检测被依赖的bean
+		// 循环检测被依赖的bean集合，集合中每一个被依赖的bean作为递归第1个参数：新的bean name
 		for (String transitiveDependency : dependentBeans) {
 
 			if (alreadySeen == null) {
