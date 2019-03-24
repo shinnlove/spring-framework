@@ -260,9 +260,16 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 		return pd;
 	}
 
-
+	/**
+	 * BeanWrapper实现类中私有的类——bean单个属性处理器。
+	 *
+	 * 类中一个属性对应一个handler实例。
+	 *
+	 * 这个类中最重要的两个方法，就是对单个属性的读取，都是采用反射的方式去读取或设置的。
+	 */
 	private class BeanPropertyHandler extends PropertyHandler {
 
+		/** 属性描述符 */
 		private final PropertyDescriptor pd;
 
 		public BeanPropertyHandler(PropertyDescriptor pd) {
@@ -289,6 +296,7 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 		@Override
 		@Nullable
 		public Object getValue() throws Exception {
+			// 获取属性描述符读取方法
 			final Method readMethod = this.pd.getReadMethod();
 			if (System.getSecurityManager() != null) {
 				AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
@@ -310,13 +318,14 @@ public class BeanWrapperImpl extends AbstractNestablePropertyAccessor implements
 		}
 
 		/**
-		 * 为bean注入值。
+		 * 取出BeanWrapper中的Instance，为bean注入值。
 		 *
-		 * @param value
+		 * @param value			需要注入的值
 		 * @throws Exception
 		 */
 		@Override
 		public void setValue(final @Nullable Object value) throws Exception {
+			// 获取属性描述符对应的写方法，如setXXX...
 			final Method writeMethod = (this.pd instanceof GenericTypeAwarePropertyDescriptor ?
 					((GenericTypeAwarePropertyDescriptor) this.pd).getWriteMethodForActualAccess() :
 					this.pd.getWriteMethod());

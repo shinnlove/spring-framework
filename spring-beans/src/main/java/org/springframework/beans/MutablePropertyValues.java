@@ -28,6 +28,7 @@ import org.springframework.util.StringUtils;
 
 /**
  * 可变属性值对，`PropertyValues`的默认实现。
+ * 持有可变属性对列表。
  *
  * Default implementation of the {@link PropertyValues} interface.
  * Allows simple manipulation of properties, and provides constructors

@@ -43,6 +43,9 @@ import org.springframework.util.ObjectUtils;
 import org.springframework.util.StringUtils;
 
 /**
+ * 在beanFactory实现中使用的助手类：
+ * 用来解析beanDefinition中定义的值，应用到目标bean实例的实际属性上。
+ *
  * Helper class for use in bean factory implementations,
  * resolving values contained in bean definition objects
  * into the actual values applied to the target bean instance.

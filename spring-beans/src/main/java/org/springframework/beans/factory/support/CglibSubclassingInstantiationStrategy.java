@@ -77,6 +77,16 @@ public class CglibSubclassingInstantiationStrategy extends SimpleInstantiationSt
 		return instantiateWithMethodInjection(bd, beanName, owner, null);
 	}
 
+	/**
+	 * CGLib所需复写的导出类实例化并注入复写方法。
+	 *
+	 * @param bd
+	 * @param beanName
+	 * @param owner
+	 * @param ctor
+	 * @param args
+	 * @return
+	 */
 	@Override
 	protected Object instantiateWithMethodInjection(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner,
 			@Nullable Constructor<?> ctor, @Nullable Object... args) {
@@ -114,12 +124,15 @@ public class CglibSubclassingInstantiationStrategy extends SimpleInstantiationSt
 		 * @return new instance of the dynamically generated subclass
 		 */
 		public Object instantiate(@Nullable Constructor<?> ctor, @Nullable Object... args) {
+			// 需要CGLib加强代理的子类
 			Class<?> subclass = createEnhancedSubclass(this.beanDefinition);
 			Object instance;
 			if (ctor == null) {
+				// 没有传入构造器(不需要自动装配)，就用目标类的默认构造器
 				instance = BeanUtils.instantiateClass(subclass);
 			}
 			else {
+				// 有构造器，就获取对应参数类型的构造器，传入构造器所需参数
 				try {
 					Constructor<?> enhancedSubclassConstructor = subclass.getConstructor(ctor.getParameterTypes());
 					instance = enhancedSubclassConstructor.newInstance(args);

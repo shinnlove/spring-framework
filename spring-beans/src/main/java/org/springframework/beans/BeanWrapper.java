@@ -19,11 +19,20 @@ package org.springframework.beans;
 import java.beans.PropertyDescriptor;
 
 /**
+ * spring底层JavaBean建设的核心接口。
+ *
  * The central interface of Spring's low-level JavaBeans infrastructure.
  *
  * <p>Typically not used directly but rather implicitly via a
  * {@link org.springframework.beans.factory.BeanFactory} or a
  * {@link org.springframework.validation.DataBinder}.
+ *
+ * 提供分析与组装标准JavaBean的操作：
+ * 1、单个或批量访问与设置值；
+ * 2、获取属性描述符；
+ * 3、查询可读可写的属性等。
+ *
+ * 对于属性和嵌套属性没有递归限制。
  *
  * <p>Provides operations to analyze and manipulate standard JavaBeans:
  * the ability to get and set property values (individually or in bulk),

@@ -457,6 +457,7 @@ public abstract class AbstractNestablePropertyAccessor extends AbstractPropertyA
 				pv.getOriginalPropertyValue().conversionNecessary = (valueToApply != originalValue);
 			}
 			// 真正注入值的地方
+			// 一个属性生成一个属性处理器、使用反射set属性值
 			ph.setValue(valueToApply);
 		}
 		catch (TypeMismatchException ex) {

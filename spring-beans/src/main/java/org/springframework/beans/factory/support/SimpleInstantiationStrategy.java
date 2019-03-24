@@ -69,11 +69,14 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 	@Override
 	public Object instantiate(RootBeanDefinition bd, @Nullable String beanName, BeanFactory owner) {
 		// Don't override the class with CGLIB if no overrides.
+		// 没有继承的类就用默认构造器实例化
 		if (!bd.hasMethodOverrides()) {
 			Constructor<?> constructorToUse;
 			synchronized (bd.constructorArgumentLock) {
+				// `Executable`类型是一个函数可以执行的基类、如构造器Constructor、方法Method
 				constructorToUse = (Constructor<?>) bd.resolvedConstructorOrFactoryMethod;
 				if (constructorToUse == null) {
+					// 没有可用构造器，就取出bean的class
 					final Class<?> clazz = bd.getBeanClass();
 					if (clazz.isInterface()) {
 						// Class<?>是接口类型不能被实例化
@@ -85,7 +88,7 @@ public class SimpleInstantiationStrategy implements InstantiationStrategy {
 									(PrivilegedExceptionAction<Constructor<?>>) clazz::getDeclaredConstructor);
 						}
 						else {
-							// 获取默认定义的构造器
+							// 获取默认定义的构造器(我们一般设置单例的时候不会去指定构造器，默认系统会添加一个无参构造器)
 							constructorToUse =	clazz.getDeclaredConstructor();
 						}
 						// 放入缓存中

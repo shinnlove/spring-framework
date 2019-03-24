@@ -152,7 +152,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	/** BeanPostProcessors to apply in createBean. */
 	private final List<BeanPostProcessor> beanPostProcessors = new ArrayList<>();
 
-	/** Indicates whether any InstantiationAwareBeanPostProcessors have been registered. */
+	/** Indicates whether any InstantiationAwareBeanPostProcessors have been registered. 指示是否有实例化Aware的bean后处理器被注册 */
 	private boolean hasInstantiationAwareBeanPostProcessors;
 
 	/** Indicates whether any DestructionAwareBeanPostProcessors have been registered. */
@@ -401,6 +401,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 
 						try {
 							// 真正创建一个单例bean
+							// 创建bean通过`AbstractAutowireCapableBeanFactory`来做，是`AbstractBeanFactory`的导出类
 							return createBean(beanName, mbd, args);
 						}
 						catch (BeansException ex) {
@@ -1466,9 +1467,11 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	protected Class<?> resolveBeanClass(final RootBeanDefinition mbd, String beanName, final Class<?>... typesToMatch)
 			throws CannotLoadBeanClassException {
 		try {
+			// 如果mbd有明确的类，直接返回Class类字面变量
 			if (mbd.hasBeanClass()) {
 				return mbd.getBeanClass();
 			}
+			// 如果mbd没有明确的类，使用上下文类加载器反射方式加载相关类型的类
 			if (System.getSecurityManager() != null) {
 				return AccessController.doPrivileged((PrivilegedExceptionAction<Class<?>>) () ->
 					doResolveBeanClass(mbd, typesToMatch), getAccessControlContext());

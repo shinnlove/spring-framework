@@ -20,6 +20,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
+ * 当某个属性值是对象、并且它指向工厂中另一个bean实例、只能在运行时解析，此时使用本类——不可改变的对象占位类。
+ *
  * Immutable placeholder class used for a property value object when it's
  * a reference to another bean in the factory, to be resolved at runtime.
  *

@@ -23,6 +23,9 @@ import org.springframework.beans.PropertyValues;
 import org.springframework.lang.Nullable;
 
 /**
+ * BeanPostProcessor后处理器的子接口，提供实例化前的一个回调钩子。
+ * 在给定属性被设置前、自动装配发生前产生一个回调，如AspectJ需要做点事情。
+ *
  * Subinterface of {@link BeanPostProcessor} that adds a before-instantiation callback,
  * and a callback after instantiation but before explicit properties are set or
  * autowiring occurs.
