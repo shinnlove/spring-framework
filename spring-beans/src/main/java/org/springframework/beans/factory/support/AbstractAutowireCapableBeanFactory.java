@@ -553,6 +553,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 			// 实例化并返回`BeanWrapper`
 			instanceWrapper = createBeanInstance(beanName, mbd, args);
 		}
+		// wrap中包裹着bean对象
 		final Object bean = instanceWrapper.getWrappedInstance();
 		Class<?> beanType = instanceWrapper.getWrappedClass();
 		if (beanType != NullBean.class) {
@@ -590,6 +591,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 
 		// Initialize the bean instance.
 		// 调用bean的初始化方法
+		// 透出的对象，这个透出的bean就是一个即将准备初始化的bean
 		Object exposedObject = bean;
 		try {
 			// 极其重要：对生成的bean进行属性注入
@@ -1146,6 +1148,7 @@ public abstract class AbstractAutowireCapableBeanFactory extends AbstractBeanFac
 		}
 		if (resolved) {
 			if (autowireNecessary) {
+				// 构造器自动装配
 				return autowireConstructor(beanName, mbd, null, null);
 			}
 			else {

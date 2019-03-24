@@ -207,6 +207,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 	 */
 	@Override
 	public Object getBean(String name) throws BeansException {
+		// 不指定具体的type，返回值就是Object类型的，通常用在spring容器刷新初始化时、或者获取指定id的bean(这样做必然要强制转换)
 		return doGetBean(name, null, null, false);
 	}
 
@@ -388,9 +389,15 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				// Create bean instance.
 				// Step3：创建bean实例
 				if (mbd.isSingleton()) {
+					// 单例
 					sharedInstance = getSingleton(beanName, () -> {
 
-						// 接口`ObjectFactory<T>`的`T getObject() throws BeansException;`方法返回一个Object
+						// 这个lambda表达式是一个具体实现类。接口`ObjectFactory<T>`的`T getObject() throws BeansException;`要求实现方法返回一个Object
+
+						// 特别注意，在这个lambda表达式中做的事情是一个创建bean单例的裸步骤。
+						// 真正创建前后的同步、标志位和抛错处理等事情都放在getSingleton中做
+						// lambda匿名实现，在getSignleton中有try调用：singletonObject = singletonFactory.getObject();
+						// 当自己写代码的时候也可以定义lambda表达式，把要做的事情放在其中，在外包一层。参见自己写的微信支付中的payCallBack接口。
 
 						try {
 							// 真正创建一个单例bean
@@ -422,6 +429,7 @@ public abstract class AbstractBeanFactory extends FactoryBeanRegistrySupport imp
 				}
 
 				else {
+					// 其他scope
 					String scopeName = mbd.getScope();
 					final Scope scope = this.scopes.get(scopeName);
 					if (scope == null) {
