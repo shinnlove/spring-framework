@@ -810,6 +810,9 @@ public class DefaultListableBeanFactory extends AbstractAutowireCapableBeanFacto
 	 *
 	 * 核心作用：在`DefaultListableBeanFactory`中建立一份`BeanDefinition`定义的数据结构。
 	 *
+	 * 这个方法是被`XmlReaderContext`中获取注册器，向本类进行注册bean定义的。
+	 * 本类继承自`BeanDefinitionRegistry`，因此也是一个注册器，可以放入xml读取器上下文中。
+	 *
 	 * @param beanName the name of the bean instance to register
 	 * @param beanDefinition definition of the bean instance to register
 	 * @throws BeanDefinitionStoreException
