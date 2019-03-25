@@ -35,12 +35,23 @@ import org.springframework.web.context.ServletConfigAware;
 import org.springframework.web.context.ServletContextAware;
 
 /**
+ * 在spring框架中，命名为抽象类一般都是为了持有对象或数据。
+ * 一个抽象可刷新的web应用上下文，持有了Servlet上下文和配置两大对象。
+ *
+ * 这是一个可刷新的web应用上下文，一个web应用应该有若干配置、指定内部的bean实例化都从哪里来，因此它继承自一个可刷新带配置的上下文。
+ *
  * {@link org.springframework.context.support.AbstractRefreshableApplicationContext}
  * subclass which implements the
  * {@link org.springframework.web.context.ConfigurableWebApplicationContext}
  * interface for web environments. Provides a "configLocations" property,
  * to be populated through the ConfigurableWebApplicationContext interface
  * on web application startup.
+ *
+ * 这个抽象可刷新的web应用上下文很容易写出继承的子类，只要实现loadBeanDefinition这个方法即可。
+ * 无论是使用`XmlBeanDefinitionReader`从xml文件加载配置、还是从数据库DB查询数据也好，只要能把对应的类属性转化成beanDefinition。
+ * 要注意存放beanDefition的那些文件是通过`getConfigLocations`方法把配置加载进来的，而这个方法也是定义在超类中。
+ *
+ * Q：在spring框架中，除了`XmlBeanDefinitionReader`还有其他什么bean定义的读取器吗？
  *
  * <p>This class is as easy to subclass as AbstractRefreshableApplicationContext:
  * All you need to implements is the {@link #loadBeanDefinitions} method;

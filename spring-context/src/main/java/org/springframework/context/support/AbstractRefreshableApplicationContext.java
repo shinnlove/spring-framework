@@ -26,6 +26,20 @@ import org.springframework.context.ApplicationContextException;
 import org.springframework.lang.Nullable;
 
 /**
+ * 抽象可刷新应用上下文，这个上下文持有了一个最终要的对象：
+ * `private DefaultListableBeanFactory beanFactory;`，管理整个bean生命周期的bean工厂，持久化着一系列beanDefinition。
+ *
+ * 一个管理着bean生命周期的bean工厂在这里被new出来一个实例，若还有父bean工厂，可以在构造时传入。
+ *
+ * 还定义了一个重要的方法：
+ * `protected abstract void loadBeanDefinitions(DefaultListableBeanFactory beanFactory)`，
+ * 在这个方法中，每一个服务器系统（web、类路径、文件）如果持有了需要管理的bean工厂，则必须为自己持有的bean工厂创建一个bean读取器，来获取这些要管理的bean。
+ * 所以这个方法定义在抽象可刷新应用上下文中。
+ *
+ * 这个方法不同于`loadBeanDefinition(BeanDefinitionReader reader)`这个方法，
+ * 这个方法是解析bean的定义，需要一个明确的解析器对象，如`XmlBeanDefinitionReader`，一个解析器可以与某个bean工厂挂钩。
+ * 这个方法是上一个方法的配套调用，主要完成解析器对象自己解析beanDefinition作用。因为在`BeanDefinitionReader`也定义了`loadBeanDefinition`方法。
+ *
  * Base class for {@link org.springframework.context.ApplicationContext}
  * implementations which are supposed to support multiple calls to {@link #refresh()},
  * creating a new internal bean factory instance every time.
@@ -72,7 +86,7 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 	@Nullable
 	private Boolean allowCircularReferences;
 
-	/** Bean factory for this context. */
+	/** Bean factory for this context. 这个web应用上下文中持有的bean工厂 */
 	@Nullable
 	private DefaultListableBeanFactory beanFactory;
 

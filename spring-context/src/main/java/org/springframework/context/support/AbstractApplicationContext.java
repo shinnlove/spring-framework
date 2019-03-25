@@ -84,6 +84,17 @@ import org.springframework.util.ReflectionUtils;
 /**
  * 应用上下文的一种抽象实现。
  *
+ * 这个应用上下文需要承担的职责：
+ *
+ * 1、持有一些事件发布、监听器列表、启动关闭钩子等——将在本上下文中自动注册：工厂后处理器、bean后处理器、应用监听器等；
+ * 2、整个应用可配置的上下文环境；
+ * 3、完成整个应用上下文生命周期全过程：准备刷新、得到bean工厂、钩子、回调、实例化bean单例、发布事件等。
+ *
+ * 在这个类中定义了一个抽象方法：
+ * `public abstract ConfigurableListableBeanFactory getBeanFactory()`
+ * 这个方法会让子类去返回一个bean工厂，如`DefaultListableBeanFactory`。
+ * 而应用上下文把接口方法定义好，只完成整个上下文、包括其中bean工厂的初始化等工作，将bean工厂作为一个黑盒去处理。
+ *
  * Abstract implementation of the {@link org.springframework.context.ApplicationContext}
  * interface. Doesn't mandate the type of storage used for configuration; simply
  * implements common context functionality. Uses the Template Method design pattern,

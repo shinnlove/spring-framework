@@ -24,6 +24,13 @@ import org.springframework.util.Assert;
 import org.springframework.util.StringUtils;
 
 /**
+ * 抽象可刷新应用上下文的子类，特别带上了config的字眼，提供给定配置路径下的通用处理。
+ *
+ * 需要使用基于xml配置文件的wen服务器、如类路径应用上下文、文件系统应用上下文、xml配置web应用上下文等都需要用到配置文件的通用处理!
+ *
+ * 因此这个类的最重要属性就是`private String[] configLocations;`，存放了所有配置文件，
+ * getConfigLocation、getDefaultConfigLocation、setConfigLocation等方法都是用来处理配置文件的。
+ *
  * {@link AbstractRefreshableApplicationContext} subclass that adds common handling
  * of specified config locations. Serves as base class for XML-based application
  * context implementations such as {@link ClassPathXmlApplicationContext} and
