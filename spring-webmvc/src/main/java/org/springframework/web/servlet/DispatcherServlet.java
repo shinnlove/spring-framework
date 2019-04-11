@@ -516,19 +516,28 @@ public class DispatcherServlet extends FrameworkServlet {
 	}
 
 	/**
+	 * 初始化当前servlet使用的策略。
+	 * 这个方法会在`WebApplicationContext`初始化后自动执行、此时spring中的bean已经初始化完成。
+	 *
 	 * Initialize the strategy objects that this servlet uses.
 	 * <p>May be overridden in subclasses in order to initialize further strategy objects.
 	 */
 	protected void initStrategies(ApplicationContext context) {
+		// 初始化文件解析器
 		initMultipartResolver(context);
+		// 初始化本地化解析器
 		initLocaleResolver(context);
+		// 初始化主题解析器
 		initThemeResolver(context);
 		// 初始化handlerMapping
 		initHandlerMappings(context);
 		// 初始化处理器适配器(从applicationContext中找handlerAdapter、找不到就使用默认的.properties中的)
 		initHandlerAdapters(context);
+		// 初始化处理器异常解析器
 		initHandlerExceptionResolvers(context);
+		// 初始化请求到视图名解析器
 		initRequestToViewNameTranslator(context);
+		// 初始化视图解析器
 		initViewResolvers(context);
 		initFlashMapManager(context);
 
