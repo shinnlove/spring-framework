@@ -129,11 +129,13 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 	@Nullable
 	private HandlerMethodReturnValueHandlerComposite returnValueHandlers;
 
+	/** 注册的模型视图解析器 */
 	@Nullable
 	private List<ModelAndViewResolver> modelAndViewResolvers;
 
 	private ContentNegotiationManager contentNegotiationManager = new ContentNegotiationManager();
 
+	/** 配置在servlet上下文中的`HttpMessageConverter`解析器 */
 	private List<HttpMessageConverter<?>> messageConverters;
 
 	private List<Object> requestResponseBodyAdvice = new ArrayList<>();
@@ -550,6 +552,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 			this.initBinderArgumentResolvers = new HandlerMethodArgumentResolverComposite().addResolvers(resolvers);
 		}
 		if (this.returnValueHandlers == null) {
+			// 注册@RequestMapping方法返回值处理器
 			List<HandlerMethodReturnValueHandler> handlers = getDefaultReturnValueHandlers();
 			this.returnValueHandlers = new HandlerMethodReturnValueHandlerComposite().addHandlers(handlers);
 		}
@@ -717,6 +720,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 
 		// Annotation-based return value types
 		handlers.add(new ModelAttributeMethodProcessor(false));
+		// @RequestBody、@ResponseBody处理器
 		handlers.add(new RequestResponseBodyMethodProcessor(getMessageConverters(),
 				this.contentNegotiationManager, this.requestResponseBodyAdvice));
 
@@ -731,6 +735,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 
 		// Catch-all
 		if (!CollectionUtils.isEmpty(getModelAndViewResolvers())) {
+			// 注册模型视图处理器
 			handlers.add(new ModelAndViewResolverMethodReturnValueHandler(getModelAndViewResolvers()));
 		}
 		else {
@@ -770,6 +775,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 
 		// 最终呈现的视图
 		ModelAndView mav;
+		// 校验请求与session
 		checkRequest(request);
 
 		// Execute invokeHandlerMethod in synchronized block if required.
@@ -803,6 +809,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 			}
 		}
 
+		// 返回模型视图或null(请求处理完就返回null)
 		return mav;
 	}
 
@@ -864,6 +871,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 			invocableMethod.setParameterNameDiscoverer(this.parameterNameDiscoverer);
 
 			// 模型视图容器
+			// 这个对象包含了requestHandle标记、决定返回值被处理后框架是否还要继续渲染视图
 			ModelAndViewContainer mavContainer = new ModelAndViewContainer();
 			// 容器中加入所有参数
 			mavContainer.addAllAttributes(RequestContextUtils.getInputFlashMap(request));
@@ -891,7 +899,7 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 				invocableMethod = invocableMethod.wrapConcurrentResult(result);
 			}
 
-			// 真正调用处理器的处理方法
+			// 真正调用处理器的处理方法，returnValue在其中被某个`HandlerMethodReturnValueHandler`给处理了
 			invocableMethod.invokeAndHandle(webRequest, mavContainer);
 			if (asyncManager.isConcurrentHandlingStarted()) {
 				return null;
@@ -1014,10 +1022,17 @@ public class RequestMappingHandlerAdapter extends AbstractHandlerMethodAdapter
 		// 更新session属性和绑定关系(可以进一步了解)
 		modelFactory.updateModel(webRequest, mavContainer);
 		if (mavContainer.isRequestHandled()) {
+			// 响应结果在输出流中已经flush、请求完成则不需要返回视图
 			return null;
 		}
+
+		// 请求未完成需要返回视图
+
 		ModelMap model = mavContainer.getModel();
+
+		// 最终返回的模型视图
 		ModelAndView mav = new ModelAndView(mavContainer.getViewName(), model, mavContainer.getStatus());
+
 		if (!mavContainer.isViewReference()) {
 			mav.setView((View) mavContainer.getView());
 		}

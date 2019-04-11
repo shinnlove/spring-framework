@@ -28,6 +28,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.web.context.request.NativeWebRequest;
 
 /**
+ * 使用注册的一系列`HandlerMethodReturnValueHandler`处理器来处理spring控制器@RequestMapping方法的返回值。
+ *
  * Handles method return values by delegating to a list of registered {@link HandlerMethodReturnValueHandler HandlerMethodReturnValueHandlers}.
  * Previously resolved return types are cached for faster lookups.
  *
@@ -38,6 +40,7 @@ public class HandlerMethodReturnValueHandlerComposite implements HandlerMethodRe
 
 	protected final Log logger = LogFactory.getLog(getClass());
 
+	/** @RequestMapping方法返回值处理器列表，Q：怎么注册的？=>在`RequestMappingHandlerAdapter`的afterProperties里注册了好多处理器。 */
 	private final List<HandlerMethodReturnValueHandler> returnValueHandlers = new ArrayList<>();
 
 
@@ -68,6 +71,8 @@ public class HandlerMethodReturnValueHandlerComposite implements HandlerMethodRe
 	}
 
 	/**
+	 * 遍历所有注册的`HandlerMethodReturnValueHandlers`处理器来解析匹配类型的返回值。
+	 *
 	 * Iterate over registered {@link HandlerMethodReturnValueHandler HandlerMethodReturnValueHandlers} and invoke the one that supports it.
 	 * @throws IllegalStateException if no suitable {@link HandlerMethodReturnValueHandler} is found.
 	 */
@@ -80,6 +85,8 @@ public class HandlerMethodReturnValueHandlerComposite implements HandlerMethodRe
 		if (handler == null) {
 			throw new IllegalArgumentException("Unknown return value type: " + returnType.getParameterType().getName());
 		}
+		// 具体处理器处理返回值，如RequestResponseBodyMethodProcessor处理`@ResponseBody`注解的
+		// Tips：像@RestController就是@Controller+@ResponseBody两个注解的合集，所以还是RequestResponseBodyMethodProcessor处理的
 		handler.handleReturnValue(returnValue, returnType, mavContainer, webRequest);
 	}
 
@@ -90,6 +97,7 @@ public class HandlerMethodReturnValueHandlerComposite implements HandlerMethodRe
 			if (isAsyncValue && !(handler instanceof AsyncHandlerMethodReturnValueHandler)) {
 				continue;
 			}
+			// 根据返回值选择对应的处理器，抽象方法各处理器自己实现，如`returnValue.hasAnnotation(ResponseBody.class)`
 			if (handler.supportsReturnType(returnType)) {
 				return handler;
 			}

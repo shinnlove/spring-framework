@@ -130,6 +130,8 @@ public class InternalResourceView extends AbstractUrlBasedView {
 
 
 	/**
+	 * 使用给定的模型渲染内部资源。
+	 *
 	 * Render the internal resource given the specified model.
 	 * This includes setting the model as request attributes.
 	 */

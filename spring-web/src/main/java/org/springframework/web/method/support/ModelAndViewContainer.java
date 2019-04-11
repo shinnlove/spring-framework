@@ -72,6 +72,7 @@ public class ModelAndViewContainer {
 
 	private final SessionStatus sessionStatus = new SimpleSessionStatus();
 
+	/** 请求在spring框架内是否被处理完的标记，重要，决定后边是否需要渲染视图 */
 	private boolean requestHandled = false;
 
 

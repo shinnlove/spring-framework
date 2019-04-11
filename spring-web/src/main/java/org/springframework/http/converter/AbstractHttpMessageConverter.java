@@ -36,6 +36,8 @@ import org.springframework.lang.Nullable;
 import org.springframework.util.Assert;
 
 /**
+ * `HttpMessageConverter`消息转换器接口的通用实现，持有支持MediaType列表、默认字符集。
+ *
  * Abstract base class for most {@link HttpMessageConverter} implementations.
  *
  * <p>This base class adds support for setting supported {@code MediaTypes}, through the

@@ -25,6 +25,14 @@ import org.springframework.http.MediaType;
 import org.springframework.lang.Nullable;
 
 /**
+ * 实现了`HttpMessageConverter`转换器接口、可以读写json消息的转换器。
+ *
+ * 这个转换器可以绑定有类型的bean或者没有类型的HashMap实例。
+ *
+ * 这个转换器默认支持application/json、使用utf-8字符，可以通过设置`supportedMediaTypes`来决定它处理的范围。
+ *
+ * 特别注意，这个类继承自{@link AbstractJackson2HttpMessageConverter}，通用的消息转换处理都在抽象类中完成了。
+ *
  * Implementation of {@link org.springframework.http.converter.HttpMessageConverter} that can read and
  * write JSON using <a href="http://wiki.fasterxml.com/JacksonHome">Jackson 2.x's</a> {@link ObjectMapper}.
  *

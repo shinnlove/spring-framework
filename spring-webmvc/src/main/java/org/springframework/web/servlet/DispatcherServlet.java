@@ -312,7 +312,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	/** Do not log potentially sensitive information (params at DEBUG and headers at TRACE). */
 	private boolean disableLoggingRequestDetails = false;
 
-	/** MultipartResolver used by this servlet. */
+	/** MultipartResolver used by this servlet. 当前servlet使用的文件上传解析器 */
 	@Nullable
 	private MultipartResolver multipartResolver;
 
@@ -523,6 +523,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		initMultipartResolver(context);
 		initLocaleResolver(context);
 		initThemeResolver(context);
+		// 初始化handlerMapping
 		initHandlerMappings(context);
 		// 初始化处理器适配器(从applicationContext中找handlerAdapter、找不到就使用默认的.properties中的)
 		initHandlerAdapters(context);
@@ -1137,6 +1138,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			else {
 				// Clean up any resources used by a multipart request.
 				if (multipartRequestParsed) {
+					// 清理multipart类型请求处理的临时文件，内部委托给multipart解析器抽象实现
 					cleanupMultipart(processedRequest);
 				}
 			}
@@ -1157,6 +1159,7 @@ public class DispatcherServlet extends FrameworkServlet {
 
 	/**
 	 * 处理handler的结果，要么返回一个模型视图、要么抛出一个错误。
+	 * 因为到这一步处理分发结果的时候，请求要么完成了被写到输出流中flush了，要么就是要呈现一个视图。
 	 *
 	 * Handle the result of handler selection and handler invocation, which is
 	 * either a ModelAndView or an Exception to be resolved to a ModelAndView.
@@ -1174,6 +1177,7 @@ public class DispatcherServlet extends FrameworkServlet {
 				mv = ((ModelAndViewDefiningException) exception).getModelAndView();
 			}
 			else {
+				// 处理Controller的@RequestMapping中抛出的异常
 				Object handler = (mappedHandler != null ? mappedHandler.getHandler() : null);
 				mv = processHandlerException(request, response, handler, exception);
 				errorView = (mv != null);
@@ -1182,12 +1186,14 @@ public class DispatcherServlet extends FrameworkServlet {
 
 		// Did the handler return a view to render?
 		if (mv != null && !mv.wasCleared()) {
+			// 返回模型视图则渲染视图，这一步很重要!!
 			render(mv, request, response);
 			if (errorView) {
 				WebUtils.clearErrorRequestAttributes(request);
 			}
 		}
 		else {
+			// 没有返回模型视图，说明请求被处理了
 			if (logger.isTraceEnabled()) {
 				logger.trace("No view rendering, null ModelAndView returned.");
 			}
@@ -1199,6 +1205,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		}
 
 		if (mappedHandler != null) {
+			// 处理器链处理完成
 			mappedHandler.triggerAfterCompletion(request, response, null);
 		}
 	}
@@ -1229,6 +1236,7 @@ public class DispatcherServlet extends FrameworkServlet {
 	 * @see MultipartResolver#resolveMultipart
 	 */
 	protected HttpServletRequest checkMultipart(HttpServletRequest request) throws MultipartException {
+		// resolver的isMultipart方法分发给commonsMultipartResolver了
 		if (this.multipartResolver != null && this.multipartResolver.isMultipart(request)) {
 			if (WebUtils.getNativeRequest(request, MultipartHttpServletRequest.class) != null) {
 				if (request.getDispatcherType().equals(DispatcherType.REQUEST)) {
@@ -1241,6 +1249,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			}
 			else {
 				try {
+					// 解析这个文件上传请求
 					return this.multipartResolver.resolveMultipart(request);
 				}
 				catch (MultipartException ex) {
@@ -1302,6 +1311,7 @@ public class DispatcherServlet extends FrameworkServlet {
 		if (this.handlerMappings != null) {
 			// 遍历所有handlerMapping
 			for (HandlerMapping mapping : this.handlerMappings) {
+				// getHandler关键还是mapping里根据请求取出的
 				HandlerExecutionChain handler = mapping.getHandler(request);
 				// 只要找到一个处理执行链就返回!!
 				if (handler != null) {
@@ -1409,6 +1419,8 @@ public class DispatcherServlet extends FrameworkServlet {
 	}
 
 	/**
+	 * 渲染控制器方法调用后返回的模型视图。
+	 *
 	 * Render the given ModelAndView.
 	 * <p>This is the last stage in handling a request. It may involve resolving the view by name.
 	 * @param mv the ModelAndView to render
@@ -1450,6 +1462,7 @@ public class DispatcherServlet extends FrameworkServlet {
 			if (mv.getStatus() != null) {
 				response.setStatus(mv.getStatus().value());
 			}
+			// 真正渲染view
 			view.render(mv.getModelInternal(), request, response);
 		}
 		catch (Exception ex) {

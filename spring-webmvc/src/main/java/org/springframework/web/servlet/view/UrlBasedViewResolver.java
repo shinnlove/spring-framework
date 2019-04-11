@@ -101,7 +101,7 @@ public class UrlBasedViewResolver extends AbstractCachingViewResolver implements
 	 */
 	public static final String FORWARD_URL_PREFIX = "forward:";
 
-
+	/** 具体解析视图的类，如{@link org.springframework.web.servlet.view.JstlView} */
 	@Nullable
 	private Class<?> viewClass;
 

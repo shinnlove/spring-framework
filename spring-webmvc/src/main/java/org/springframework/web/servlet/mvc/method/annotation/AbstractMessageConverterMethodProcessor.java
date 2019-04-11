@@ -166,10 +166,10 @@ public abstract class AbstractMessageConverterMethodProcessor extends AbstractMe
 	 * 向指定的输出流写出给定的handler处理得到的返回值信息。
 	 *
 	 * Writes the given return type to the given output message.
-	 * @param value the value to write to the output message
-	 * @param returnType the type of the value
-	 * @param inputMessage the input messages. Used to inspect the {@code Accept} header.
-	 * @param outputMessage the output message to write to
+	 * @param value the value to write to the output message									返回值
+	 * @param returnType the type of the value													返回类型
+	 * @param inputMessage the input messages. Used to inspect the {@code Accept} header.		输入流
+	 * @param outputMessage the output message to write to										输出流
 	 * @throws IOException thrown in case of I/O errors
 	 * @throws HttpMediaTypeNotAcceptableException thrown when the conditions indicated
 	 * by the {@code Accept} header on the request cannot be met by the message converters
@@ -226,6 +226,7 @@ public abstract class AbstractMessageConverterMethodProcessor extends AbstractMe
 		}
 		else {
 			HttpServletRequest request = inputMessage.getServletRequest();
+			// 从请求头中读出可以接受的媒体类型
 			List<MediaType> requestedMediaTypes = getAcceptableMediaTypes(request);
 			List<MediaType> producibleMediaTypes = getProducibleMediaTypes(request, valueType, declaredType);
 
@@ -269,14 +270,18 @@ public abstract class AbstractMessageConverterMethodProcessor extends AbstractMe
 			logger.debug("Using '" + selectedMediaType + "' given " + mediaTypesToUse);
 		}
 
+		// 选中要输出的的媒体类型后，就要应用配置在servlet中的转换器了
 		if (selectedMediaType != null) {
 			selectedMediaType = selectedMediaType.removeQualityValue();
+			// 逐个运用转换器
 			for (HttpMessageConverter<?> converter : this.messageConverters) {
 				GenericHttpMessageConverter genericConverter =
 						(converter instanceof GenericHttpMessageConverter ? (GenericHttpMessageConverter<?>) converter : null);
 				if (genericConverter != null ?
 						((GenericHttpMessageConverter) converter).canWrite(declaredType, valueType, selectedMediaType) :
 						converter.canWrite(valueType, selectedMediaType)) {
+					// 当前转换器支持读写特定媒体类型消息、就应用这个转换器
+					// 特别注意：这里有`beforeBodyWrite`这个方法，也就是转换是在向输出流写入消息之前进行的!
 					body = getAdvice().beforeBodyWrite(body, returnType, selectedMediaType,
 							(Class<? extends HttpMessageConverter<?>>) converter.getClass(),
 							inputMessage, outputMessage);
@@ -287,9 +292,11 @@ public abstract class AbstractMessageConverterMethodProcessor extends AbstractMe
 						}
 						addContentDispositionHeader(inputMessage, outputMessage);
 						if (genericConverter != null) {
+							// 通用转换器写入
 							genericConverter.write(body, declaredType, selectedMediaType, outputMessage);
 						}
 						else {
+							// Base接口类型转换器写入
 							((HttpMessageConverter) converter).write(body, selectedMediaType, outputMessage);
 						}
 					}
@@ -303,6 +310,7 @@ public abstract class AbstractMessageConverterMethodProcessor extends AbstractMe
 			}
 		}
 
+		// 理论上不应该走到这里，要么就是没有配置对应的消息类型转换器
 		if (body != null) {
 			throw new HttpMediaTypeNotAcceptableException(this.allSupportedMediaTypes);
 		}

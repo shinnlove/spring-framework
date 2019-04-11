@@ -54,6 +54,10 @@ import org.springframework.util.Assert;
 import org.springframework.util.TypeUtils;
 
 /**
+ * 使用jackson解析json的、内容独立的HTTP消息转换器实现。
+ *
+ * spring5.0需要使用jackson2.9或更高版本。
+ *
  * Abstract base class for Jackson based and content type independent
  * {@link HttpMessageConverter} implementations.
  *
@@ -246,14 +250,28 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 		}
 	}
 
+	/**
+	 * 实现父类抽象方法的Jackson消息输出前内部转换。
+	 *
+	 * TODO：看一下jackson转换json是怎么做的，更了解一些。
+	 *
+	 * @param object													特别注意：这个要写入的对象值，
+	 * @param type the type of object to write (may be {@code null})	这个类型在处理返回值的时候就已经将其类型解析出来了，也有可能是null
+	 * @param outputMessage the HTTP output message to write to
+	 * @throws IOException
+	 * @throws HttpMessageNotWritableException
+	 */
 	@Override
 	protected void writeInternal(Object object, @Nullable Type type, HttpOutputMessage outputMessage)
 			throws IOException, HttpMessageNotWritableException {
-
+		// Q：输出流如果输出json、这里类型是否application/json？
 		MediaType contentType = outputMessage.getHeaders().getContentType();
+		// jackson的json编码方式
 		JsonEncoding encoding = getJsonEncoding(contentType);
+		// jackson的json生成器，工厂使用输出流和编码生成
 		JsonGenerator generator = this.objectMapper.getFactory().createGenerator(outputMessage.getBody(), encoding);
 		try {
+			// 前置钩子
 			writePrefix(generator, object);
 
 			Class<?> serializationView = null;
@@ -287,9 +305,14 @@ public abstract class AbstractJackson2HttpMessageConverter extends AbstractGener
 					config.isEnabled(SerializationFeature.INDENT_OUTPUT)) {
 				objectWriter = objectWriter.with(this.ssePrettyPrinter);
 			}
+			// 使用生成器写入值
 			objectWriter.writeValue(generator, value);
 
+			// 后置钩子
 			writeSuffix(generator, object);
+
+			// generator包装了output流，flush的时候会自己生成json并且调用output流的write和flush方法
+			// 如UTF8JsonGenerator就output流写json填充的buffer
 			generator.flush();
 
 		}

@@ -84,6 +84,7 @@ public abstract class AbstractHandlerMethodAdapter extends WebContentGenerator i
 	public final ModelAndView handle(HttpServletRequest request, HttpServletResponse response, Object handler)
 			throws Exception {
 
+		// 调用@RequestMapping方法后、如果请求没完成会获得一个模型视图、请求完成就返回null
 		return handleInternal(request, response, (HandlerMethod) handler);
 	}
 

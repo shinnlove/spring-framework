@@ -83,11 +83,16 @@ public class ModelAndViewResolverMethodReturnValueHandler implements HandlerMeth
 
 		if (this.mavResolvers != null) {
 			for (ModelAndViewResolver mavResolver : this.mavResolvers) {
+				// 包含返回值的类
 				Class<?> handlerType = returnType.getContainingClass();
 				Method method = returnType.getMethod();
 				Assert.state(method != null, "No handler method");
 				ExtendedModelMap model = (ExtendedModelMap) mavContainer.getModel();
+
+				// 使用具体模型视图解析器解析视图
+				// 注意：模型视图解析器和视图解析器不同
 				ModelAndView mav = mavResolver.resolveModelAndView(method, handlerType, returnValue, model, webRequest);
+
 				if (mav != ModelAndViewResolver.UNRESOLVED) {
 					mavContainer.addAllAttributes(mav.getModel());
 					mavContainer.setViewName(mav.getViewName());
@@ -100,10 +105,12 @@ public class ModelAndViewResolverMethodReturnValueHandler implements HandlerMeth
 		}
 
 		// No suitable ModelAndViewResolver...
+		// 没有配置合适的模型视图解析器，尝试使用返回值类型名的解析器(如返回一个bean)
 		if (this.modelAttributeProcessor.supportsReturnType(returnType)) {
 			this.modelAttributeProcessor.handleReturnValue(returnValue, returnType, mavContainer, webRequest);
 		}
 		else {
+			// 返回值类型找不到具体的解析器
 			throw new UnsupportedOperationException("Unexpected return type: " +
 					returnType.getParameterType().getName() + " in method: " + returnType.getMethod());
 		}

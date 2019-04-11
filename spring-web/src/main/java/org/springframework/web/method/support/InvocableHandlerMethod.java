@@ -113,6 +113,10 @@ public class InvocableHandlerMethod extends HandlerMethod {
 
 
 	/**
+	 * 这一步就是单纯的准备形参、利用反射调用@RequestMapping标注的方法了。
+	 *
+	 * 如果错误不在@RequestMapping方法中处理掉，则会向上抛出。
+	 *
 	 * Invoke the method after resolving its argument values in the context of the given request.
 	 * <p>Argument values are commonly resolved through {@link HandlerMethodArgumentResolver HandlerMethodArgumentResolvers}.
 	 * The {@code providedArgs} parameter however may supply argument values to be used directly,

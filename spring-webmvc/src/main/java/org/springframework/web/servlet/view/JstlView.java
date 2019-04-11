@@ -25,6 +25,8 @@ import org.springframework.web.servlet.support.JstlUtils;
 import org.springframework.web.servlet.support.RequestContext;
 
 /**
+ * 专门支持JSP页面的视图，让jsp可以使用标准的jstl标签库。
+ *
  * Specialization of {@link InternalResourceView} for JSTL pages,
  * i.e. JSP pages that use the JSP Standard Tag Library.
  *

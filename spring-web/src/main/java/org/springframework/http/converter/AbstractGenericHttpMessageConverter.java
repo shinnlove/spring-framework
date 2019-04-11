@@ -27,6 +27,8 @@ import org.springframework.http.StreamingHttpOutputMessage;
 import org.springframework.lang.Nullable;
 
 /**
+ * `GenericHttpMessageConverter`消息转换器的抽象实现类，定义了canWrite等方法。
+ *
  * Abstract base class for most {@link GenericHttpMessageConverter} implementations.
  *
  * @author Sebastien Deleuze
@@ -77,6 +79,8 @@ public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHtt
 	}
 
 	/**
+	 * 抽象通用HTTP消息转换器会加默认的输出头。
+	 *
 	 * This implementation sets the default headers by calling {@link #addDefaultHeaders},
 	 * and then calls {@link #writeInternal}.
 	 */
@@ -87,6 +91,7 @@ public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHtt
 		addDefaultHeaders(headers, t, contentType);
 
 		if (outputMessage instanceof StreamingHttpOutputMessage) {
+			// 流式body输出
 			StreamingHttpOutputMessage streamingOutputMessage = (StreamingHttpOutputMessage) outputMessage;
 			streamingOutputMessage.setBody(outputStream -> writeInternal(t, type, new HttpOutputMessage() {
 				@Override
@@ -113,6 +118,8 @@ public abstract class AbstractGenericHttpMessageConverter<T> extends AbstractHtt
 	}
 
 	/**
+	 * 抽象模板方法写入实际的消息体，被write方法调用。
+	 *
 	 * Abstract template method that writes the actual body. Invoked from {@link #write}.
 	 * @param t the object to write to the output message
 	 * @param type the type of object to write (may be {@code null})

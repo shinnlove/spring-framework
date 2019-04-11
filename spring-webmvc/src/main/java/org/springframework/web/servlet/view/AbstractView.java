@@ -311,8 +311,11 @@ public abstract class AbstractView extends WebApplicationObjectSupport implement
 					(this.staticAttributes.isEmpty() ? "" : ", static attributes " + this.staticAttributes));
 		}
 
+		// 将模型中所有放入的属性值合并!
 		Map<String, Object> mergedModel = createMergedOutputModel(model, request, response);
 		prepareResponse(request, response);
+
+		// 这一步就到`org.springframework.web.servlet.view.InternalResourceView.renderMergedOutputModel`里渲染了
 		renderMergedOutputModel(mergedModel, getRequestToExpose(request), response);
 	}
 

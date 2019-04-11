@@ -45,6 +45,8 @@ import org.springframework.web.method.support.ModelAndViewContainer;
 import org.springframework.web.servlet.mvc.support.DefaultHandlerExceptionResolver;
 
 /**
+ * 解析方法形参上有@RequestBody注解、或方法打了@ResponseBody注解其返回值需要用`HttpMessageConverter`解析器去处理的。
+ *
  * Resolves method arguments annotated with {@code @RequestBody} and handles return
  * values from methods annotated with {@code @ResponseBody} by reading and writing
  * to the body of the request or response with an {@link HttpMessageConverter}.
@@ -168,7 +170,12 @@ public class RequestResponseBodyMethodProcessor extends AbstractMessageConverter
 	}
 
 	/**
-	 * `@ResponseBody`注解将处理器的返回结果以json方式直接流式输出。
+	 * 处理@RequestMapping方法的返回值。
+	 *
+	 * 注意这个方法没有任何返回值，说明返回值在这个方法中被写入到了输出流中。
+	 * 当然期间可能经过了一系列的消息类型转换。
+	 *
+	 * 如：`@ResponseBody`注解将处理器的返回结果以json方式直接流式输出。
 	 *
 	 * @param returnValue the value returned from the handler method
 	 * @param returnType the type of the return value. This type must have
