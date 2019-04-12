@@ -137,18 +137,22 @@ public class TransactionTemplate extends DefaultTransactionDefinition
 			TransactionStatus status = this.transactionManager.getTransaction(this);
 			T result;
 			try {
+				// 做事务匿名内部类的事情
 				result = action.doInTransaction(status);
 			}
 			catch (RuntimeException | Error ex) {
 				// Transactional code threw application exception -> rollback
+				// 事务代码中抛出runtime错误直接回滚
 				rollbackOnException(status, ex);
 				throw ex;
 			}
 			catch (Throwable ex) {
 				// Transactional code threw unexpected exception -> rollback
+				// 事务代码中出现任何错误也回滚
 				rollbackOnException(status, ex);
 				throw new UndeclaredThrowableException(ex, "TransactionCallback threw undeclared checked exception");
 			}
+			// 没有抛错就做提交，如果在`action.doInTransaction(status)`将status设置为setRollbackOnly也不可以提交
 			this.transactionManager.commit(status);
 			return result;
 		}
