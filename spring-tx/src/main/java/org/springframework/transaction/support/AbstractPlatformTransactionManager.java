@@ -763,10 +763,13 @@ public abstract class AbstractPlatformTransactionManager implements PlatformTran
 			}
 			catch (TransactionException ex) {
 				// can only be caused by doCommit
+				// 这个分支只有进入doCommit做提交抛错才会进入，如连接池连接断掉了等...
 				if (isRollbackOnCommitFailure()) {
+					// 提交失败了做回滚
 					doRollbackOnCommitException(status, ex);
 				}
 				else {
+					// 不需要回滚触发结束
 					triggerAfterCompletion(status, TransactionSynchronization.STATUS_UNKNOWN);
 				}
 				throw ex;
