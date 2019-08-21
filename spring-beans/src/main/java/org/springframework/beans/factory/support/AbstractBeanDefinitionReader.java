@@ -23,6 +23,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
 import org.springframework.beans.factory.BeanDefinitionStoreException;
+import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
 import org.springframework.core.env.Environment;
 import org.springframework.core.env.EnvironmentCapable;
 import org.springframework.core.env.StandardEnvironment;
@@ -188,9 +189,13 @@ public abstract class AbstractBeanDefinitionReader implements EnvironmentCapable
 		Assert.notNull(resources, "Resource array must not be null");
 		int counter = 0;
 		for (Resource resource : resources) {
-			// 这里loadBeanDefinitions一般走XmlBeanDefinitionReader中的
-			// 接doLoadBeanDefinitions方法调用register的注册beanDefinitions
-			// 再然后接DefaultBeanDefinitionDocumentReader的doRegisterBeanDefinitions注册方法开始解析xml文件了
+			/**
+			 * 这里loadBeanDefinitions一般走XmlBeanDefinitionReader中的；
+			 * 接doLoadBeanDefinitions方法调用register的注册beanDefinitions；
+			 * 再然后接DefaultBeanDefinitionDocumentReader的doRegisterBeanDefinitions注册方法开始解析xml文件了
+			 *
+			 * @see XmlBeanDefinitionReader#loadBeanDefinitions(org.springframework.core.io.Resource)
+			 */
 			counter += loadBeanDefinitions(resource);
 		}
 		return counter;

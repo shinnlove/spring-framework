@@ -62,6 +62,11 @@ public class AopNamespaceHandler extends NamespaceHandlerSupport {
 	@Override
 	public void init() {
 		// In 2.0 XSD as well as in 2.1 XSD.
+		/**
+		 * 这个动作其实就是在往`NamespaceHandlerSupport`类的parser映射中放入不同的解析器；日后解析的时候根据映射拿出来。
+		 *
+		 * @see NamespaceHandlerSupport#registerBeanDefinitionParser(java.lang.String, org.springframework.beans.factory.xml.BeanDefinitionParser)
+		 */
 		registerBeanDefinitionParser("config", new ConfigBeanDefinitionParser());
 		registerBeanDefinitionParser("aspectj-autoproxy", new AspectJAutoProxyBeanDefinitionParser());
 		registerBeanDefinitionDecorator("scoped-proxy", new ScopedProxyBeanDefinitionDecorator());

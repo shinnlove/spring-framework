@@ -1363,6 +1363,7 @@ public class BeanDefinitionParserDelegate {
 	 */
 	@Nullable
 	public BeanDefinition parseCustomElement(Element ele, @Nullable BeanDefinition containingBd) {
+		// 必须要存在namespaceUri，否则不解析
 		String namespaceUri = getNamespaceURI(ele);
 		if (namespaceUri == null) {
 			return null;
@@ -1374,7 +1375,11 @@ public class BeanDefinitionParserDelegate {
 			error("Unable to locate Spring NamespaceHandler for XML schema namespace [" + namespaceUri + "]", ele);
 			return null;
 		}
-		// 多态解析bean定义(形参当前解析元素、解析上下文)
+		/**
+		 * 多态解析bean定义(形参当前解析元素、解析上下文)
+		 *
+		 * @see NamespaceHandlerSupport#parse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext)
+		 */
 		return handler.parse(ele, new ParserContext(this.readerContext, this, containingBd));
 	}
 

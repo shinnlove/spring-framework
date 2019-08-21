@@ -136,7 +136,7 @@ public class DefaultNamespaceHandlerResolver implements NamespaceHandlerResolver
 			return (NamespaceHandler) handlerOrClassName;
 		}
 		else {
-			// handlerMapping存储的是个字符串
+			// handlerMapping存储的是个字符串，一个命名空间对应一个具体的全类名
 			String className = (String) handlerOrClassName;
 			try {
 				// 使用`默认命名空间解析器`构造时传入的`classLoader`来反射加载这个`NamespaceHandler`的`派生类`
@@ -145,8 +145,9 @@ public class DefaultNamespaceHandlerResolver implements NamespaceHandlerResolver
 					throw new FatalBeanException("Class [" + className + "] for namespace [" + namespaceUri +
 							"] does not implement the [" + NamespaceHandler.class.getName() + "] interface");
 				}
+				// 一个NamespaceHandler会加载很多beanDefinitionParser
 				NamespaceHandler namespaceHandler = (NamespaceHandler) BeanUtils.instantiateClass(handlerClass);
-				// 多态初始化具体的Namespace
+				// 多态初始化具体的Namespace，如AopNamespaceHandler
 				namespaceHandler.init();
 				handlerMappings.put(namespaceUri, namespaceHandler);
 				return namespaceHandler;

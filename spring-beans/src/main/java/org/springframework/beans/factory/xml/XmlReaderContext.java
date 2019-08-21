@@ -48,6 +48,7 @@ public class XmlReaderContext extends ReaderContext {
 
 	private final XmlBeanDefinitionReader reader;
 
+	/** 这个handler只在XmlReaderContext初始化的时候从schema里读到 */
 	private final NamespaceHandlerResolver namespaceHandlerResolver;
 
 

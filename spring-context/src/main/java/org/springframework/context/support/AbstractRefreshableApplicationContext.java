@@ -156,8 +156,11 @@ public abstract class AbstractRefreshableApplicationContext extends AbstractAppl
 			customizeBeanFactory(beanFactory);
 
 			/**
-			 * 启动对bean定义的载入，是个抽象方法，在其子类`AbstractXmlApplicationContext`中初始化了读取器`XmlBeanDefinitionReader`
-			 * 如果默认使用{@link org.springframework.web.context.support.XmlWebApplicationContext}，则会调用到其中的加载bean配置
+			 * 启动对bean定义的载入，是个抽象方法。
+			 * 一般情况下，在其子类`AbstractXmlApplicationContext`中初始化了读取器`XmlBeanDefinitionReader`
+			 *
+			 * spring web类应用基本默认使用{@link org.springframework.web.context.support.XmlWebApplicationContext}，则会调用到其中的加载bean配置：
+			 * @see org.springframework.web.context.support.XmlWebApplicationContext#loadBeanDefinitions(org.springframework.beans.factory.support.DefaultListableBeanFactory)
 			 */
 			loadBeanDefinitions(beanFactory);
 			synchronized (this.beanFactoryMonitor) {

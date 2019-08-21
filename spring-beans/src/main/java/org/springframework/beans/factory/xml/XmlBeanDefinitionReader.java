@@ -572,6 +572,8 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	}
 
 	/**
+	 * NamespaceHandlerResolver是在创建`XmlReaderContext`的时候获取的。
+	 *
 	 * Create the {@link XmlReaderContext} to pass over to the document reader.
 	 */
 	public XmlReaderContext createReaderContext(Resource resource) {
@@ -586,7 +588,6 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * @see #createDefaultNamespaceHandlerResolver()
 	 */
 	public NamespaceHandlerResolver getNamespaceHandlerResolver() {
-		//
 		if (this.namespaceHandlerResolver == null) {
 			this.namespaceHandlerResolver = createDefaultNamespaceHandlerResolver();
 		}
@@ -600,6 +601,7 @@ public class XmlBeanDefinitionReader extends AbstractBeanDefinitionReader {
 	 * Default implementation returns an instance of {@link DefaultNamespaceHandlerResolver}.
 	 */
 	protected NamespaceHandlerResolver createDefaultNamespaceHandlerResolver() {
+		// 资源加载器这个类的classLoader传入
 		ClassLoader cl = (getResourceLoader() != null ? getResourceLoader().getClassLoader() : getBeanClassLoader());
 		return new DefaultNamespaceHandlerResolver(cl);
 	}

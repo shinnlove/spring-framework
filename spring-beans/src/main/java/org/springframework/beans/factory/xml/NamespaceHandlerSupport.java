@@ -75,6 +75,11 @@ public abstract class NamespaceHandlerSupport implements NamespaceHandler {
 	@Nullable
 	public BeanDefinition parse(Element element, ParserContext parserContext) {
 		BeanDefinitionParser parser = findParserForElement(element, parserContext);
+		/**
+		 * 任意的Parser类只要实现`BeanDefinitionParser`接口，自定义解析元素即可。
+		 *
+		 * @see BeanDefinitionParser#parse(org.w3c.dom.Element, org.springframework.beans.factory.xml.ParserContext)
+		 */
 		return (parser != null ? parser.parse(element, parserContext) : null);
 	}
 
